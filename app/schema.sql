@@ -52,6 +52,15 @@ CREATE TABLE IF NOT EXISTS anexos (
     deleted_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS downloads_datasync (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_arquivo TEXT NOT NULL UNIQUE,
+    caminho_arquivo TEXT NOT NULL,
+    total_downloads INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_scripts_sql_busca ON scripts_sql (titulo, tipo_banco, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_correcoes_n2_busca ON correcoes_n2 (titulo, sistema, categoria, criticidade, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_anexos_origem ON anexos (tipo_origem, origem_id, deleted_at);

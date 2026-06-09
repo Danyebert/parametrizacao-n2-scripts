@@ -62,6 +62,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env
+source .venv/bin/activate
 flask --app run.py run --host=0.0.0.0 --port=5000 --debug --no-reload
 ```
 

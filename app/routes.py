@@ -391,20 +391,82 @@ def too_large(error):
     return redirect(request.referrer or url_for("main.dashboard"))
 
 
+def registrar_download_datasync(nome_arquivo, caminho_arquivo):
+    db = get_db()
+
+    existente = db.execute(
+        """
+        SELECT id
+        FROM downloads_datasync
+        WHERE nome_arquivo = ?
+        """,
+        (nome_arquivo,)
+    ).fetchone()
+
+    if existente:
+        db.execute(
+            """
+            UPDATE downloads_datasync
+            SET total_downloads = total_downloads + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE nome_arquivo = ?
+            """,
+            (nome_arquivo,)
+        )
+    else:
+        db.execute(
+            """
+            INSERT INTO downloads_datasync (
+                nome_arquivo,
+                caminho_arquivo,
+                total_downloads
+            )
+            VALUES (?, ?, 1)
+            """,
+            (nome_arquivo, caminho_arquivo)
+        )
+
+    db.commit()
+
 @bp.route("/datasync")
 def datasync_index():
     projetos_path = Path(current_app.root_path) / "static" / "datasync" / "projetos"
-
     projetos_path.mkdir(parents=True, exist_ok=True)
 
+    db = get_db()
     projetos = []
 
     for item in sorted(projetos_path.iterdir(), key=lambda p: p.name.lower()):
+        nome_download = item.name
+
+        if item.is_dir():
+            arquivos = [p for p in item.iterdir() if p.is_file()]
+            compactados = [
+                p for p in arquivos
+                if p.suffix.lower() in [".rar", ".zip", ".7z"]
+            ]
+
+            if len(arquivos) == 1 and len(compactados) == 1:
+                nome_download = compactados[0].name
+            else:
+                nome_download = f"{item.name}.zip"
+
+        contador = db.execute(
+            """
+            SELECT total_downloads
+            FROM downloads_datasync
+            WHERE nome_arquivo = ?
+            """,
+            (nome_download,)
+        ).fetchone()
+
         projetos.append({
             "nome": item.name,
+            "nome_download": nome_download,
             "tipo": "Pasta" if item.is_dir() else "Arquivo",
             "caminho": f"datasync/projetos/{item.name}",
-            "url": url_for("main.datasync_download", nome=item.name)
+            "url": url_for("main.datasync_download", nome=item.name),
+            "downloads": contador["total_downloads"] if contador else 0
         })
 
     return render_template("datasync/index.html", projetos=projetos)
@@ -428,29 +490,44 @@ def datasync_download(nome):
     if not item_path.exists():
         abort(404)
 
-    # Se for arquivo, baixa o próprio arquivo direto.
     if item_path.is_file():
-        return send_file(item_path, as_attachment=True, download_name=item_path.name)
+        registrar_download_datasync(
+            nome_arquivo=item_path.name,
+            caminho_arquivo=str(item_path.relative_to(projetos_path))
+        )
 
-    # Se for pasta, verifica se dentro tem apenas um arquivo compactado.
+        return send_file(
+            item_path,
+            as_attachment=True,
+            download_name=item_path.name
+        )
+
     if item_path.is_dir():
         arquivos = [p for p in item_path.iterdir() if p.is_file()]
-
         compactados = [
             p for p in arquivos
             if p.suffix.lower() in [".rar", ".zip", ".7z"]
         ]
 
-        # Se a pasta tiver apenas um compactado, baixa ele direto.
         if len(arquivos) == 1 and len(compactados) == 1:
             arquivo = compactados[0]
+
+            registrar_download_datasync(
+                nome_arquivo=arquivo.name,
+                caminho_arquivo=str(arquivo.relative_to(projetos_path))
+            )
+
             return send_file(
                 arquivo,
                 as_attachment=True,
                 download_name=arquivo.name
             )
 
-        # Se tiver vários arquivos, gera ZIP da pasta.
+        registrar_download_datasync(
+            nome_arquivo=f"{item_path.name}.zip",
+            caminho_arquivo=str(item_path.relative_to(projetos_path))
+        )
+
         temp_dir = Path(tempfile.gettempdir())
         zip_base = temp_dir / item_path.name
 

@@ -18,3 +18,10 @@ git status
 git add .
 git commit -m "Atualiza arquivos do projeto"
 git push
+
+## Fluxo para fazer sempre
+git pull  
+# faz alterações
+git add .
+git commit -m "Adiciona contador de downloads"
+git push

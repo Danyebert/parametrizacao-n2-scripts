@@ -61,3 +61,5 @@ def seed_tipo_banco(db):
             """,
             (banco, timestamp, timestamp),
         )
+
+

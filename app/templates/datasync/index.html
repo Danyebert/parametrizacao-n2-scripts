@@ -28,6 +28,7 @@
                   <th>Nome</th>
                   <th>Tipo</th>
                   <th>Caminho</th>
+                  <th>Downloads</th>
                   <th class="text-end">Ação</th>
                 </tr>
               </thead>
@@ -44,18 +45,27 @@
                     </td>
                     <td>
                       <span class="badge {% if projeto.tipo == 'Pasta' %}text-bg-warning{% else %}text-bg-primary{% endif %}">
-                        {{ projeto.tipo }}
+                       {{ projeto.tipo }}
                       </span>
                     </td>
                     <td>
                       <code>{{ projeto.caminho }}</code>
                     </td>
-                    <td class="text-end">
-                    <a href="{{ projeto.url }}" class="btn btn-sm btn-outline-primary">
+                    <td>
+                    <span class="badge text-bg-success contador-download">
+                      {{ projeto.downloads }}
+                    </span>
+                  </td>
+
+                  <td class="text-end">
+                    <a
+                      href="{{ projeto.url }}"
+                      class="btn btn-sm btn-outline-primary btn-download"
+                    >
                       <i class="bi bi-download"></i>
                       Baixar
                     </a>
-                    </td>
+                  </td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -75,4 +85,26 @@
     </div>
   </div>
 </div>
-{% endblock %}
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+      document.querySelectorAll('.btn-download').forEach(function(btn){
+
+          btn.addEventListener('click', function(){
+
+              const linha = btn.closest('tr');
+              const contador = linha.querySelector('.contador-download');
+
+              if(contador){
+                  let valor = parseInt(contador.textContent.trim()) || 0;
+                  contador.textContent = valor + 1;
+              }
+
+          });
+
+      });
+
+  });
+  </script>
+  {% endblock %}
