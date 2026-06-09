@@ -1,0 +1,21 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon"><i class="bi bi-terminal"></i></div>
+    <div>
+      <strong>Parametrização</strong><br>
+      <span>N2 Scripts</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('main.dashboard') }}" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="{{ url_for('main.scripts_index') }}" class="nav-link"><i class="bi bi-code-slash"></i> Scripts SQL</a>
+    <a href="{{ url_for('main.correcoes_index') }}" class="nav-link"><i class="bi bi-tools"></i> Correções N2</a>
+    <a href="{{ url_for('main.busca') }}" class="nav-link"><i class="bi bi-search"></i> Busca Geral</a>
+    <a href="{{ url_for('main.datasync_index') }}" class="nav-link"><i class="bi bi-folder2-open"></i> DataSync</a>
+    <a class="nav-link disabled" aria-disabled="true"><i class="bi bi-link-45deg"></i> Links úteis</a>
+  </nav>
+  <div class="sidebar-footer small">
+    <div class="text-white-50">Preparado para VPS</div>
+    <div class="text-white-50">SQLite • Flask • Bootstrap</div>
+  </div>
+</aside>

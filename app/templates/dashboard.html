@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Parametrização N2 Scripts{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Visão geral do sistema e últimas atualizações.</p>
+  </div>
+  {% if is_admin %}
+    <a href="{{ url_for('main.scripts_create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Novo Script</a>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <a class="metric-card metric-purple" href="{{ url_for('main.scripts_index') }}">
+      <span>Scripts SQL</span>
+      <strong>{{ scripts_count }}</strong>
+      <small>Total cadastrados</small>
+      <i class="bi bi-code-slash"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a class="metric-card metric-green" href="{{ url_for('main.correcoes_index') }}">
+      <span>Correções N2</span>
+      <strong>{{ correcoes_count }}</strong>
+      <small>Total cadastradas</small>
+      <i class="bi bi-tools"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a class="metric-card metric-blue" href="{{ url_for('main.busca') }}">
+      <span>Busca Geral</span>
+      <strong>5</strong>
+      <small>Últimos registros exibidos</small>
+      <i class="bi bi-search"></i>
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-body d-flex justify-content-between align-items-center">
+    <strong>Últimas Atualizações</strong>
+    <a href="{{ url_for('main.busca') }}" class="small">Ver todas</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Tipo</th><th>Título</th><th>Categoria/Banco</th><th>Atualizado em</th></tr></thead>
+      <tbody>
+      {% for item in updates %}
+        <tr>
+          <td><span class="badge text-bg-{{ 'primary' if item.tipo == 'script' else 'success' }}">{{ 'Script SQL' if item.tipo == 'script' else 'Correção N2' }}</span></td>
+          <td>
+            <a href="{{ url_for('main.scripts_detail', script_id=item.id) if item.tipo == 'script' else url_for('main.correcoes_detail', correcao_id=item.id) }}">{{ item.titulo }}</a>
+          </td>
+          <td>{{ item.meta }}</td>
+          <td>{{ item.updated_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="text-muted">Nenhum registro cadastrado ainda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <a class="module-card" href="{{ url_for('main.scripts_index') }}">
+      <i class="bi bi-filetype-sql"></i>
+      <div><strong>Scripts SQL</strong><span>Consulte e gerencie scripts SQL cadastrados no sistema.</span></div>
+      <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  <div class="col-lg-6">
+    <a class="module-card" href="{{ url_for('main.correcoes_index') }}">
+      <i class="bi bi-wrench-adjustable"></i>
+      <div><strong>Correções N2</strong><span>Consulte e gerencie correções de demandas e erros recorrentes.</span></div>
+      <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}

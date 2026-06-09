@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Flask
+instance/
+.env
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads locais
+app/static/uploads/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+
+# VS Code
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+#Projetos
+app/static/datasync/projetos

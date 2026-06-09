@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}{{ script.titulo }}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="breadcrumb-lite"><a href="{{ url_for('main.scripts_index') }}">Scripts SQL</a> / {{ script.titulo }}</div>
+    <h1>{{ script.titulo }} <span class="badge text-bg-light border">{{ script.tipo_banco }}</span></h1>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-primary" data-copy-sql onclick="copySql()">
+  <i class="bi bi-clipboard"></i> Copiar SQL
+</button>
+    {% if is_admin %}
+      <a class="btn btn-warning" href="{{ url_for('main.scripts_edit', script_id=script.id) }}"><i class="bi bi-pencil"></i> Editar</a>
+      <form method="post" action="{{ url_for('main.scripts_delete', script_id=script.id) }}" onsubmit="return confirm('Excluir logicamente este script?')"><button class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button></form>
+    {% endif %}
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm"><div class="card-body">
+      <h5>Descrição</h5><p>{{ script.descricao|nl2br }}</p><hr>
+      <h5>Observações</h5><p>{{ script.observacoes|default('Sem observações.', true)|nl2br }}</p><hr>
+      <p class="small text-muted mb-1">Criado em: {{ script.created_at }}</p>
+      <p class="small text-muted mb-0">Atualizado em: {{ script.updated_at }}</p>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+  <div class="card-header bg-body d-flex justify-content-between">
+    <strong>Código SQL</strong>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-sql onclick="copySql()">
+      Copiar
+    </button>
+  </div>
+
+  <div class="card-body">
+    <textarea id="codigo-sql" class="code-editor">{{ script.codigo_sql }}</textarea>
+  </div>
+</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let sqlEditor = null;
+
+  if (window.initSqlEditor) {
+    sqlEditor = window.initSqlEditor('codigo-sql', true);
+  }
+
+  function copySql() {
+    let text = "";
+
+    if (sqlEditor && typeof sqlEditor.getValue === "function") {
+      text = sqlEditor.getValue();
+    } else {
+      const textarea = document.getElementById("codigo-sql");
+      text = textarea ? textarea.value : "";
+    }
+
+    if (!text.trim()) {
+      alert("Não foi possível encontrar o código SQL para copiar.");
+      return;
+    }
+
+    function showCopiedFeedback() {
+      const buttons = document.querySelectorAll("[data-copy-sql]");
+
+      buttons.forEach(function (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Copiado!";
+        btn.classList.remove("btn-outline-primary", "btn-outline-secondary");
+        btn.classList.add("btn-success");
+
+        setTimeout(function () {
+          btn.innerHTML = originalText;
+          btn.classList.remove("btn-success");
+
+          if (btn.classList.contains("btn-sm")) {
+            btn.classList.add("btn-outline-secondary");
+          } else {
+            btn.classList.add("btn-outline-primary");
+          }
+        }, 1500);
+      });
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(showCopiedFeedback).catch(function () {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "-9999px";
+
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      document.execCommand("copy");
+      showTemporaryAlert("SQL copiado.");
+    } catch (e) {
+      alert("Não foi possível copiar automaticamente. Selecione o SQL e copie manualmente.");
+    }
+
+    document.body.removeChild(textarea);
+  }
+
+  function showTemporaryAlert(message) {
+    const alertBox = document.createElement("div");
+    alertBox.className = "alert alert-success position-fixed top-0 end-0 m-3";
+    alertBox.style.zIndex = "9999";
+    alertBox.innerText = message;
+
+    document.body.appendChild(alertBox);
+
+    setTimeout(function () {
+      alertBox.remove();
+    }, 1500);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+<header class="topbar">
+  <button class="btn btn-outline-secondary d-lg-none" type="button" data-toggle-sidebar><i class="bi bi-list"></i></button>
+  <form action="{{ url_for('main.busca') }}" class="top-search" method="get">
+    <i class="bi bi-search"></i>
+    <input name="q" value="{{ request.args.get('q', '') }}" class="form-control" placeholder="Buscar em todo o sistema...">
+  </form>
+  <div class="top-actions">
+    <div class="btn-group" role="group" aria-label="Tema">
+      <button class="btn btn-light border" data-theme-value="auto" title="Tema automático"><i class="bi bi-circle-half"></i></button>
+      <button class="btn btn-light border" data-theme-value="light" title="Tema claro"><i class="bi bi-sun"></i></button>
+      <button class="btn btn-light border" data-theme-value="dark" title="Tema escuro"><i class="bi bi-moon-stars"></i></button>
+    </div>
+    {% if is_admin %}
+      <a class="btn btn-outline-danger" href="{{ url_for('main.logout') }}"><i class="bi bi-box-arrow-right"></i> Sair</a>
+    {% else %}
+      <a class="btn btn-primary" href="{{ url_for('main.login') }}"><i class="bi bi-shield-lock"></i> Acesso ADM</a>
+    {% endif %}
+  </div>
+</header>

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Correções N2{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><h1>Correções N2</h1><p>Erros recorrentes, causas prováveis e soluções aplicadas.</p></div>
+  {% if is_admin %}<a class="btn btn-primary" href="{{ url_for('main.correcoes_create') }}"><i class="bi bi-plus-lg"></i> Nova Correção</a>{% endif %}
+</div>
+<div class="card border-0 shadow-sm"><div class="card-body">
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-lg-5"><input class="form-control" name="q" value="{{ q }}" placeholder="Buscar correções..."></div>
+    <div class="col-lg-3"><select class="form-select" name="categoria"><option value="">Categoria: Todas</option>{% for c in categorias %}<option {% if categoria == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2"><select class="form-select" name="criticidade"><option value="">Criticidade: Todas</option>{% for c in criticidades %}<option {% if criticidade == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 d-grid"><button class="btn btn-outline-primary">Filtrar</button></div>
+  </form>
+  <div class="table-responsive"><table class="table table-hover align-middle">
+    <thead><tr><th>Título</th><th>Sistema</th><th>Categoria</th><th>Criticidade</th><th>Atualizado em</th><th class="text-end">Ações</th></tr></thead>
+    <tbody>
+    {% for item in correcoes %}
+      <tr>
+        <td><a href="{{ url_for('main.correcoes_detail', correcao_id=item.id) }}">{{ item.titulo }}</a></td>
+        <td>{{ item.sistema }}</td><td><span class="badge text-bg-light border">{{ item.categoria }}</span></td>
+        <td><span class="badge criticidade-{{ item.criticidade|lower|replace('é','e') }}">{{ item.criticidade }}</span></td>
+        <td>{{ item.updated_at }}</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.correcoes_detail', correcao_id=item.id) }}"><i class="bi bi-eye"></i></a>{% if is_admin %} <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.correcoes_edit', correcao_id=item.id) }}"><i class="bi bi-pencil"></i></a>{% endif %}</td>
+      </tr>
+    {% else %}<tr><td colspan="6" class="text-muted">Nenhuma correção encontrada.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div></div>
+{% endblock %}

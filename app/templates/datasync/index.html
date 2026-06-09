@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}DataSync{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="breadcrumb-lite">Dashboard / DataSync</div>
+    <h1>DataSync</h1>
+    <p class="text-muted mb-0">Projetos, scripts e arquivos relacionados ao DataSync.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-body d-flex justify-content-between align-items-center">
+        <strong>Projetos DataSync</strong>
+        <span class="badge text-bg-primary">{{ projetos|length }} item(ns)</span>
+      </div>
+
+      <div class="card-body">
+        {% if projetos %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Caminho</th>
+                  <th class="text-end">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for projeto in projetos %}
+                  <tr>
+                    <td>
+                      {% if projeto.tipo == 'Pasta' %}
+                        <i class="bi bi-folder text-warning"></i>
+                      {% else %}
+                        <i class="bi bi-file-earmark-code text-primary"></i>
+                      {% endif %}
+                      {{ projeto.nome }}
+                    </td>
+                    <td>
+                      <span class="badge {% if projeto.tipo == 'Pasta' %}text-bg-warning{% else %}text-bg-primary{% endif %}">
+                        {{ projeto.tipo }}
+                      </span>
+                    </td>
+                    <td>
+                      <code>{{ projeto.caminho }}</code>
+                    </td>
+                    <td class="text-end">
+                    <a href="{{ projeto.url }}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-download"></i>
+                      Baixar
+                    </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-folder2-open fs-1 text-muted"></i>
+            <h5 class="mt-3">Nenhum projeto encontrado</h5>
+            <p class="text-muted">
+              Adicione arquivos ou pastas em:
+              <code>app/static/datasync/projetos</code>
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

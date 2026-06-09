@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}{{ correcao.titulo }}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><div class="breadcrumb-lite"><a href="{{ url_for('main.correcoes_index') }}">Correções N2</a> / {{ correcao.titulo }}</div><h1>{{ correcao.titulo }}</h1><span class="badge text-bg-light border">{{ correcao.categoria }}</span> <span class="badge criticidade-{{ correcao.criticidade|lower|replace('é','e') }}">{{ correcao.criticidade }}</span></div>
+  {% if is_admin %}<div class="d-flex gap-2"><a class="btn btn-warning" href="{{ url_for('main.correcoes_edit', correcao_id=correcao.id) }}"><i class="bi bi-pencil"></i> Editar</a><form method="post" action="{{ url_for('main.correcoes_delete', correcao_id=correcao.id) }}" onsubmit="return confirm('Excluir logicamente esta correção?')"><button class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button></form></div>{% endif %}
+</div>
+<div class="row g-4">
+  <div class="col-lg-3"><div class="card border-0 shadow-sm"><div class="card-body"><h5>Resumo</h5><p><strong>Sistema:</strong><br>{{ correcao.sistema }}</p><p><strong>Categoria:</strong><br>{{ correcao.categoria }}</p><p><strong>Criticidade:</strong><br>{{ correcao.criticidade }}</p><hr><p class="small text-muted mb-1">Criado em: {{ correcao.created_at }}</p><p class="small text-muted mb-0">Atualizado em: {{ correcao.updated_at }}</p></div></div></div>
+  <div class="col-lg-9"><div class="card border-0 shadow-sm"><div class="card-body detail-content"><h5>Erro apresentado</h5><p>{{ correcao.erro|nl2br }}</p><h5>Causa provável</h5><p>{{ correcao.causa|nl2br }}</p><h5>Correção aplicada</h5><p>{{ correcao.correcao|nl2br }}</p><h5>Imagens anexadas</h5>{% if anexos %}<div class="row g-3">{% for anexo in anexos %}<div class="col-md-4"><a href="{{ url_for('static', filename=anexo.caminho_arquivo) }}" target="_blank" class="attachment-card"><img src="{{ url_for('static', filename=anexo.caminho_arquivo) }}" alt="{{ anexo.nome_arquivo }}"><div class="p-2 small text-truncate">{{ anexo.nome_arquivo }}</div></a></div>{% endfor %}</div>{% else %}<p class="text-muted">Nenhuma imagem anexada.</p>{% endif %}</div></div></div>
+</div>
+{% endblock %}

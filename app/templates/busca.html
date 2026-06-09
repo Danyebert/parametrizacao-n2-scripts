@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Busca Geral{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Busca Geral</h1><p>Pesquise por título, banco, categoria, descrição, SQL, correção ou sistema.</p></div></div>
+<div class="card border-0 shadow-sm mb-4"><div class="card-body"><form method="get" class="row g-2"><div class="col-lg-8"><input class="form-control" name="q" value="{{ q }}" placeholder="Digite sua busca..."></div><div class="col-lg-2"><select class="form-select" name="modulo"><option value="todos" {% if modulo == 'todos' %}selected{% endif %}>Todos</option><option value="scripts" {% if modulo == 'scripts' %}selected{% endif %}>Scripts SQL</option><option value="correcoes" {% if modulo == 'correcoes' %}selected{% endif %}>Correções N2</option></select></div><div class="col-lg-2 d-grid"><button class="btn btn-primary">Buscar</button></div></form></div></div>
+{% if q %}
+<h5>Resultados para: “{{ q }}”</h5>
+<div class="list-group shadow-sm mb-4">
+  {% for script in scripts %}<a class="list-group-item list-group-item-action" href="{{ url_for('main.scripts_detail', script_id=script.id) }}"><div class="d-flex justify-content-between"><strong>Script SQL - {{ script.titulo }}</strong><span class="badge text-bg-light border">{{ script.tipo_banco }}</span></div><small class="text-muted">{{ script.descricao }}</small></a>{% endfor %}
+  {% for item in correcoes %}<a class="list-group-item list-group-item-action" href="{{ url_for('main.correcoes_detail', correcao_id=item.id) }}"><div class="d-flex justify-content-between"><strong>Correção N2 - {{ item.titulo }}</strong><span class="badge criticidade-{{ item.criticidade|lower|replace('é','e') }}">{{ item.criticidade }}</span></div><small class="text-muted">{{ item.sistema }} • {{ item.categoria }} • {{ item.erro }}</small></a>{% endfor %}
+  {% if not scripts and not correcoes %}<div class="list-group-item text-muted">Nenhum resultado encontrado.</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

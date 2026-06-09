@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Scripts SQL{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><h1>Scripts SQL</h1><p>Consulta e manutenção de scripts por tipo de banco.</p></div>
+  {% if is_admin %}<a class="btn btn-primary" href="{{ url_for('main.scripts_create') }}"><i class="bi bi-plus-lg"></i> Novo Script</a>{% endif %}
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form class="row g-2 mb-3" method="get">
+      <div class="col-lg-7"><input class="form-control" name="q" value="{{ q }}" placeholder="Buscar scripts..."></div>
+      <div class="col-lg-3">
+        <select class="form-select" name="tipo_banco">
+          <option value="">Tipo de banco: Todos</option>
+          {% for tipo in tipos_banco %}<option value="{{ tipo.nome }}" {% if tipo_banco == tipo.nome %}selected{% endif %}>{{ tipo.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 d-grid"><button class="btn btn-outline-primary">Filtrar</button></div>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr><th>Título</th><th>Tipo de Banco</th><th>Descrição</th><th>Atualizado em</th><th class="text-end">Ações</th></tr></thead>
+        <tbody>
+        {% for script in scripts %}
+          <tr>
+            <td><a href="{{ url_for('main.scripts_detail', script_id=script.id) }}">{{ script.titulo }}</a></td>
+            <td><span class="badge text-bg-light border">{{ script.tipo_banco }}</span></td>
+            <td class="text-muted table-description">{{ script.descricao }}</td>
+            <td>{{ script.updated_at }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.scripts_detail', script_id=script.id) }}"><i class="bi bi-eye"></i></a>
+              {% if is_admin %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.scripts_edit', script_id=script.id) }}"><i class="bi bi-pencil"></i></a>{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-muted">Nenhum script encontrado.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
