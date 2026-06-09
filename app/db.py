@@ -50,7 +50,6 @@ def init_db_if_needed():
     seed_tipo_banco(db)
     db.commit()
 
-
 def seed_tipo_banco(db):
     bancos = ["SQL Server", "MySQL", "PostgreSQL", "Oracle", "SQLite"]
     timestamp = now()
