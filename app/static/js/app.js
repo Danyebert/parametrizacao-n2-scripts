@@ -11,6 +11,8 @@ window.initSqlEditor = function(elementId, readOnly){
     viewportMargin: Infinity
   });
   window.sqlEditors[elementId] = editor;
+
+  return editor;
 };
 
 document.addEventListener('click', async (event) => {

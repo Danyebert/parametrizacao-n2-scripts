@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Banco de Dados Mapeados{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Banco de Dados Mapeados</h1>
+    <p>Gerencie bancos, usuários e consultas SQL vinculadas.</p>
+  </div>
+
+  {% if is_admin %}
+    <a href="{{ url_for('main.bancos_mapeados_create') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> Novo Banco
+    </a>
+  {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Sistema</th>
+          <th>Banco</th>
+          <th>Usuário</th>
+          <th>Consultas</th>
+          <th>Atualizado em</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for banco in bancos %}
+          <tr>
+            <td>{{ banco.nome_sistema }}</td>
+            <td>{{ banco.nome_banco }}</td>
+            <td>{{ banco.usuario }}</td>
+            <td>
+              <span class="badge text-bg-primary">
+                {{ banco.total_consultas }}
+              </span>
+            </td>
+            <td>{{ banco.updated_at }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('main.bancos_mapeados_detail', banco_id=banco.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i>
+              </a>
+
+              {% if is_admin %}
+                <a href="{{ url_for('main.bancos_mapeados_edit', banco_id=banco.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-muted">
+              Nenhum banco mapeado cadastrado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

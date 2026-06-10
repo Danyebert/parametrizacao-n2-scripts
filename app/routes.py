@@ -544,3 +544,252 @@ def datasync_download(nome):
         )
 
     abort(404)
+
+
+@bp.route("/bancos-mapeados")
+def bancos_mapeados_index():
+    db = get_db()
+
+    bancos = db.execute(
+        """
+        SELECT bm.*,
+               COUNT(cs.id) AS total_consultas
+        FROM banco_mapeado bm
+        LEFT JOIN consulta_sql cs
+          ON cs.banco_id = bm.id
+         AND cs.deleted_at IS NULL
+        WHERE bm.deleted_at IS NULL
+        GROUP BY bm.id
+        ORDER BY bm.updated_at DESC
+        """
+    ).fetchall()
+
+    return render_template("bancos_mapeados/index.html", bancos=bancos)
+
+
+@bp.route("/bancos-mapeados/novo", methods=["GET", "POST"])
+@login_required
+def bancos_mapeados_create():
+    if request.method == "POST":
+        return salvar_banco_mapeado()
+
+    return render_template("bancos_mapeados/form.html", banco=None, consultas=[])
+
+@bp.route("/bancos-mapeados/<int:banco_id>")
+def bancos_mapeados_detail(banco_id):
+    db = get_db()
+
+    banco = db.execute(
+            """
+            SELECT *
+            FROM banco_mapeado
+            WHERE id = ?
+            AND deleted_at IS NULL
+            """,
+            (banco_id,)
+        ).fetchone()
+
+    if banco is None:
+            flash("Banco mapeado não encontrado.", "warning")
+            return redirect(url_for("main.bancos_mapeados_index"))
+
+    consultas = db.execute(
+            """
+            SELECT *
+            FROM consulta_sql
+            WHERE banco_id = ?
+            AND deleted_at IS NULL
+            ORDER BY ordem ASC, id ASC
+            """,
+            (banco_id,)
+        ).fetchall()
+
+    return render_template(
+            "bancos_mapeados/detail.html",
+            banco=banco,
+            consultas=consultas
+        )
+
+
+@bp.route("/bancos-mapeados/<int:banco_id>/editar", methods=["GET", "POST"])
+@login_required
+def bancos_mapeados_edit(banco_id):
+        db = get_db()
+
+        banco = db.execute(
+            """
+            SELECT *
+            FROM banco_mapeado
+            WHERE id = ?
+            AND deleted_at IS NULL
+            """,
+            (banco_id,)
+        ).fetchone()
+
+        if banco is None:
+            flash("Banco mapeado não encontrado.", "warning")
+            return redirect(url_for("main.bancos_mapeados_index"))
+
+        if request.method == "POST":
+            return salvar_banco_mapeado(banco_id)
+
+        consultas = db.execute(
+            """
+            SELECT *
+            FROM consulta_sql
+            WHERE banco_id = ?
+            AND deleted_at IS NULL
+            ORDER BY ordem ASC, id ASC
+            """,
+            (banco_id,)
+        ).fetchall()
+
+        return render_template(
+            "bancos_mapeados/form.html",
+            banco=banco,
+            consultas=consultas
+        )
+
+
+@bp.route("/bancos-mapeados/<int:banco_id>/deletar", methods=["POST"])
+@login_required
+def bancos_mapeados_delete(banco_id):
+        db = get_db()
+
+        db.execute(
+            """
+            UPDATE banco_mapeado
+            SET deleted_at = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (now(), now(), banco_id)
+        )
+
+        db.execute(
+            """
+            UPDATE consulta_sql
+            SET deleted_at = ?,
+                updated_at = ?
+            WHERE banco_id = ?
+            """,
+            (now(), now(), banco_id)
+        )
+
+        db.commit()
+
+        flash("Banco mapeado excluído com sucesso.", "success")
+        return redirect(url_for("main.bancos_mapeados_index"))
+
+
+def salvar_banco_mapeado(banco_id=None):
+    db = get_db()
+
+    nome_sistema = request.form.get("nome_sistema", "").strip()
+    nome_banco = request.form.get("nome_banco", "").strip()
+    usuario = request.form.get("usuario", "").strip()
+    senha = request.form.get("senha", "").strip()
+
+    tabelas = request.form.getlist("consulta_tabela[]")
+    titulos = request.form.getlist("consulta_titulo[]")
+    sqls = request.form.getlist("consulta_sql[]")
+
+    if not nome_sistema or not nome_banco or not usuario or not senha:
+        flash("Preencha todos os campos do banco.", "warning")
+        return redirect(request.url)
+
+    consultas_validas = []
+
+    for index, titulo in enumerate(titulos):
+        titulo = titulo.strip()
+        sql = sqls[index].strip() if index < len(sqls) else ""
+        nome_tabela = tabelas[index].strip() if index < len(tabelas) else ""
+
+        if titulo and sql:
+            consultas_validas.append({
+                "nome_tabela": nome_tabela,
+                "titulo": titulo,
+                "sql": sql,
+                "ordem": index + 1
+            })
+
+    if not consultas_validas:
+        flash("Adicione pelo menos uma consulta SQL.", "warning")
+        return redirect(request.url)
+
+    timestamp = now()
+
+    if banco_id:
+        db.execute(
+            """
+            UPDATE banco_mapeado
+            SET nome_sistema = ?,
+                nome_banco = ?,
+                usuario = ?,
+                senha = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (nome_sistema, nome_banco, usuario, senha, timestamp, banco_id)
+        )
+
+        db.execute(
+            """
+            UPDATE consulta_sql
+            SET deleted_at = ?,
+                updated_at = ?
+            WHERE banco_id = ?
+            """,
+            (timestamp, timestamp, banco_id)
+        )
+
+        target_id = banco_id
+        flash("Banco mapeado atualizado com sucesso.", "success")
+
+    else:
+        cur = db.execute(
+            """
+            INSERT INTO banco_mapeado (
+                nome_sistema,
+                nome_banco,
+                usuario,
+                senha,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (nome_sistema, nome_banco, usuario, senha, timestamp, timestamp)
+        )
+
+        target_id = cur.lastrowid
+        flash("Banco mapeado cadastrado com sucesso.", "success")
+
+    for consulta in consultas_validas:
+        db.execute(
+            """
+            INSERT INTO consulta_sql (
+                banco_id,
+                nome_tabela,
+                titulo,
+                sql,
+                ordem,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                target_id,
+                consulta["nome_tabela"],
+                consulta["titulo"],
+                consulta["sql"],
+                consulta["ordem"],
+                timestamp,
+                timestamp
+            )
+        )
+
+    db.commit()
+
+    return redirect(url_for("main.bancos_mapeados_detail", banco_id=target_id))

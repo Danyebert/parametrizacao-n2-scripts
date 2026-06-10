@@ -25,3 +25,6 @@ git pull
 git add .
 git commit -m "Adiciona contador de downloads"
 git push
+
+## Antes de qualquer att
+sudo chmod -R 777 /home/danyebert/parametrizacao-n2-scripts

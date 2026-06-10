@@ -61,6 +61,29 @@ CREATE TABLE IF NOT EXISTS downloads_datasync (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS banco_mapeado (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_sistema TEXT NOT NULL,
+    nome_banco TEXT NOT NULL,
+    usuario TEXT NOT NULL,
+    senha TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS consulta_sql (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    banco_id INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    sql TEXT NOT NULL,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (banco_id) REFERENCES banco_mapeado(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_scripts_sql_busca ON scripts_sql (titulo, tipo_banco, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_correcoes_n2_busca ON correcoes_n2 (titulo, sistema, categoria, criticidade, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_anexos_origem ON anexos (tipo_origem, origem_id, deleted_at);

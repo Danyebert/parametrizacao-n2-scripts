@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Editar' if banco else 'Novo' }} Banco Mapeado{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>{{ 'Editar' if banco else 'Novo' }} Banco Mapeado</h1>
+    <p>Cadastre o banco e quantas consultas SQL forem necessárias.</p>
+  </div>
+</div>
+
+<form method="post" id="form-banco-mapeado" class="card border-0 shadow-sm">
+  <div class="card-body">
+    <h5 class="mb-3">Dados do Banco</h5>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label">Nome do Sistema</label>
+        <input name="nome_sistema" class="form-control" required value="{{ banco.nome_sistema if banco else '' }}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Nome do Banco</label>
+        <input name="nome_banco" class="form-control" required value="{{ banco.nome_banco if banco else '' }}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Usuário</label>
+        <input name="usuario" class="form-control" required value="{{ banco.usuario if banco else '' }}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Senha</label>
+        <input name="senha" class="form-control" required value="{{ banco.senha if banco else '' }}">
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Consultas SQL</h5>
+
+      <button type="button" class="btn btn-outline-primary" onclick="adicionarConsulta()">
+        <i class="bi bi-plus-lg"></i> Adicionar Consulta
+      </button>
+    </div>
+
+    <div id="consultas-container">
+      {% if consultas %}
+        {% for consulta in consultas %}
+          <div class="consulta-bloco card border shadow-sm mb-3">
+            <div class="card-header bg-body d-flex justify-content-between align-items-center">
+              <strong>Consulta SQL</strong>
+
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsulta(this)">
+                <i class="bi bi-trash"></i> Remover
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Tabela Origem</label>
+                  <input
+                    name="consulta_tabela[]"
+                    class="form-control"
+                    value="{{ consulta.nome_tabela or '' }}"
+                    placeholder="Ex: Cadastro de Clientes">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Título da Consulta</label>
+                  <input
+                    name="consulta_titulo[]"
+                    class="form-control"
+                    required
+                    value="{{ consulta.titulo }}"
+                    placeholder="Ex: 01_Import_Clientes">
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">SQL</label>
+                  <textarea
+                    name="consulta_sql[]"
+                    class="form-control sql-editor"
+                    rows="8"
+                    placeholder="SELECT * FROM tabela;">{{ consulta.sql }}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="consulta-bloco card border shadow-sm mb-3">
+          <div class="card-header bg-body d-flex justify-content-between align-items-center">
+            <strong>Consulta SQL</strong>
+
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsulta(this)">
+              <i class="bi bi-trash"></i> Remover
+            </button>
+          </div>
+
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Tabela Origem</label>
+                <input
+                  name="consulta_tabela[]"
+                  class="form-control"
+                  placeholder="Ex: Cadastro de Clientes">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Título da Consulta</label>
+                <input
+                  name="consulta_titulo[]"
+                  class="form-control"
+                  required
+                  placeholder="Ex: 01_Import_Clientes">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">SQL</label>
+                <textarea
+                  name="consulta_sql[]"
+                  class="form-control sql-editor"
+                  rows="8"
+                  placeholder="SELECT * FROM tabela;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-footer bg-body d-flex justify-content-end gap-2">
+    <a href="{{ url_for('main.bancos_mapeados_index') }}" class="btn btn-light border">
+      Cancelar
+    </a>
+
+    <button class="btn btn-primary">
+      <i class="bi bi-save"></i> Salvar
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let bancoEditors = [];
+
+  function inicializarEditors() {
+    bancoEditors = [];
+
+    document.querySelectorAll('.sql-editor').forEach(function(textarea) {
+      if (textarea.dataset.editorAtivo === '1') {
+        return;
+      }
+
+      textarea.dataset.editorAtivo = '1';
+
+      if (typeof CodeMirror !== 'undefined') {
+        const editor = CodeMirror.fromTextArea(textarea, {
+          mode: 'text/x-sql',
+          theme: 'material-darker',
+          lineNumbers: true,
+          lineWrapping: true,
+          viewportMargin: Infinity
+        });
+
+        bancoEditors.push(editor);
+      }
+    });
+  }
+
+  function adicionarConsulta() {
+    const container = document.getElementById('consultas-container');
+
+    const bloco = document.createElement('div');
+    bloco.className = 'consulta-bloco card border shadow-sm mb-3';
+
+    bloco.innerHTML = `
+      <div class="card-header bg-body d-flex justify-content-between align-items-center">
+        <strong>Consulta SQL</strong>
+
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsulta(this)">
+          <i class="bi bi-trash"></i> Remover
+        </button>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Tabela Origem</label>
+            <input
+              name="consulta_tabela[]"
+              class="form-control"
+              placeholder="Ex: Cadastro de Clientes">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Título da Consulta</label>
+            <input
+              name="consulta_titulo[]"
+              class="form-control"
+              required
+              placeholder="Ex: 01_Import_Clientes">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">SQL</label>
+            <textarea
+              name="consulta_sql[]"
+              class="form-control sql-editor"
+              rows="8"
+              placeholder="SELECT * FROM tabela;"></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(bloco);
+    inicializarEditors();
+  }
+
+  function removerConsulta(botao) {
+    const blocos = document.querySelectorAll('.consulta-bloco');
+
+    if (blocos.length <= 1) {
+      alert('É necessário manter pelo menos uma consulta.');
+      return;
+    }
+
+    botao.closest('.consulta-bloco').remove();
+  }
+
+  document.getElementById('form-banco-mapeado').addEventListener('submit', function () {
+    bancoEditors.forEach(function(editor) {
+      editor.save();
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', inicializarEditors);
+</script>
+{% endblock %}
