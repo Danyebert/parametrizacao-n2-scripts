@@ -6,18 +6,77 @@
       <span>N2 Scripts</span>
     </div>
   </div>
-  <nav class="sidebar-nav">
-    <a href="{{ url_for('main.dashboard') }}" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="{{ url_for('main.scripts_index') }}" class="nav-link"><i class="bi bi-code-slash"></i> Scripts SQL</a>
-    <a href="{{ url_for('main.correcoes_index') }}" class="nav-link"><i class="bi bi-tools"></i> Correções N2</a>
-    <a href="{{ url_for('main.busca') }}" class="nav-link"><i class="bi bi-search"></i> Busca Geral</a>
-    <a href="{{ url_for('main.datasync_index') }}" class="nav-link"><i class="bi bi-folder2-open"></i> DataSync</a>
-    <a href="{{ url_for('main.bancos_mapeados_index') }}" class="nav-link"><i class="bi bi-database"></i> Banco de Dados Mapeados</a>
-    <a class="nav-link disabled" aria-disabled="true"><i class="bi bi-link-45deg"></i> Conversores</a>
-    <a class="nav-link disabled" aria-disabled="true"><i class="bi bi-share"></i> Gerador de Link</a>
-  </nav>
-  <div class="sidebar-footer small">
-    <div class="text-white-50">Versão 1.0.0</div>
+<nav class="sidebar-nav">
+
+  <a href="{{ url_for('main.dashboard') }}" class="nav-link">
+    <i class="bi bi-speedometer2"></i>
+    <span>Dashboard</span>
+  </a>
+
+  <button
+    class="nav-link sidebar-group-toggle"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#grupo-parametrizacao"
+    aria-expanded="false"
+  >
+    <i class="bi bi-sliders"></i>
+    <span>Parametrização</span>
+    <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+  </button>
+
+ <div class="collapse sidebar-submenu" id="grupo-parametrizacao">
+    <a href="{{ url_for('main.scripts_index') }}" class="nav-link sidebar-subitem">
+      <i class="bi bi-code-slash"></i>
+      <span>Scripts SQL</span>
+    </a>
+
+    <a href="{{ url_for('main.datasync_index') }}" class="nav-link sidebar-subitem">
+      <i class="bi bi-folder"></i>
+      <span>DataSync</span>
+    </a>
+
+    <a href="{{ url_for('main.bancos_mapeados_index') }}" class="nav-link sidebar-subitem">
+      <i class="bi bi-database"></i>
+      <span>Banco de Dados Mapeados</span>
+    </a>
+
+    <a href="{{ url_for('main.gerador_link') }}" class="nav-link sidebar-subitem">
+      <i class="bi bi-link-45deg"></i>
+      <span>Gerador de Link</span>
+    </a>
+
+
+    <a class="nav-link sidebar-subitem disabled" aria-disabled="true">
+      <i class="bi bi-arrow-left-right"></i>
+      <span>Conversores</span>
+    </a>
+
+ </div>
+
+  <button
+    class="nav-link sidebar-group-toggle"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#grupo-n2"
+    aria-expanded="false"
+  >
+  <i class="bi bi-headset"></i>
+    <span>N2</span>
+    <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+  </button>
+
+<div class="collapse sidebar-submenu" id="grupo-n2">
+    <a href="{{ url_for('main.correcoes_index') }}" class="nav-link sidebar-subitem">
+      <i class="bi bi-tools"></i>
+      <span>Correções N2</span>
+    </a>
   </div>
+
+  <div class="sidebar-footer small">
+    <div class="text-white-50">Versão 1.4.0 • Build 2026.06</div>
+  </div>
+  
+</nav>
 </aside>
   

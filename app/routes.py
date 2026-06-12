@@ -791,5 +791,8 @@ def salvar_banco_mapeado(banco_id=None):
         )
 
     db.commit()
-
     return redirect(url_for("main.bancos_mapeados_detail", banco_id=target_id))
+
+@bp.route("/gerador-link")
+def gerador_link():
+    return render_template("gerador_link/index.html")

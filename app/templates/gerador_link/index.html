@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerador de Link{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Gerador de Identificador</h1>
+    <p>Cole a linha do cliente para gerar número e identificador normalizado.</p>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <label class="form-label">Cole a linha aqui:</label>
+    <textarea id="input" class="form-control" rows="4" placeholder="Ex: 05/26 - 72051 - SILVANIO DIREÇOES HIDRAULICAS - ARAPIRACA"></textarea>
+
+    <button class="btn btn-primary w-100 mt-3" type="button" onclick="gerar()">
+      <i class="bi bi-magic"></i> Gerar identificador
+    </button>
+
+    <div class="row g-3 mt-3">
+
+      <!-- IDENTIFICADOR -->
+      <div class="col-md-5">
+        <label class="form-label text-uppercase small text-muted">
+          Url amigável
+        </label>
+
+        <div class="p-3 border rounded d-flex align-items-center gap-2">
+          <strong id="result-text" class="text-success flex-grow-1">
+            Url amigável
+          </strong>
+
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            id="copy-id"
+            onclick="copiar('result-text','copy-id')"
+            style="display:none"
+          >
+            <i class="bi bi-clipboard"></i> Copiar
+          </button>
+        </div>
+      </div>
+
+      <!-- NÚMERO -->
+      <div class="col-md-5">
+        <label class="form-label text-uppercase small text-muted">
+          Código do cliente 
+        </label>
+
+          <div class="p-3 border rounded d-flex align-items-center">
+            <strong id="num-text" class="text-warning">
+              número aqui
+            </strong>
+
+            <button
+              class="btn btn-sm btn-outline-secondary ms-auto"
+              id="copy-num"
+              onclick="copiar('num-text','copy-num')"
+              style="display:none"
+            >
+              <i class="bi bi-clipboard"></i> Copiar
+            </button>
+          </div>
+      </div>
+
+    <hr>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0">
+        <i class="bi bi-clock-history"></i> Histórico
+        <span class="text-muted small" id="counter"></span>
+      </h6>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-success" id="export-btn" onclick="exportarTxt()" disabled>
+          <i class="bi bi-download"></i> Exportar .txt
+        </button>
+
+        <button class="btn btn-sm btn-outline-danger" onclick="limparLogs()">
+          <i class="bi bi-trash"></i> Limpar
+        </button>
+      </div>
+    </div>
+
+    <div id="log-list" class="d-flex flex-column gap-2">
+      <p class="text-muted fst-italic text-center py-3">nenhum registro ainda</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let logs = [];
+
+function normalizar(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function extrairPartes(linha) {
+  const partes = linha.split('-').map(p => p.trim());
+  let numero = '';
+  const nomeParts = [];
+
+  for (const p of partes) {
+    const n = normalizar(p);
+
+    if (/^\d{2}\/\d{2}$/.test(p)) continue;
+
+    if (/^\d{4,6}$/.test(n) && !numero) {
+      numero = n;
+      continue;
+    }
+
+    if (n.length > 0) {
+      nomeParts.push(p);
+    }
+  }
+
+  return {
+    numero,
+    nome: normalizar(nomeParts.join(''))
+  };
+}
+
+function formatarData(iso) {
+  const d = new Date(iso);
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const ano = d.getFullYear();
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+
+  return `${dia}/${mes}/${ano} ${h}:${m}:${s}`;
+}
+
+function renderizarLogs() {
+  const lista = document.getElementById('log-list');
+  const counter = document.getElementById('counter');
+  const exportBtn = document.getElementById('export-btn');
+
+  counter.textContent = logs.length ? `(${logs.length})` : '';
+  exportBtn.disabled = logs.length === 0;
+
+  if (!logs.length) {
+    lista.innerHTML = '<p class="text-muted fst-italic text-center py-3">nenhum registro ainda</p>';
+    return;
+  }
+
+  lista.innerHTML = [...logs].reverse().map(l => `
+    <div class="border rounded p-2 d-flex justify-content-between gap-3">
+      <div>
+        ${l.numero ? `<div class="text-warning small"># ${l.numero}</div>` : ''}
+        <div class="text-success fw-semibold">${l.nome}</div>
+      </div>
+      <small class="text-muted">${formatarData(l.data)}</small>
+    </div>
+  `).join('');
+}
+
+function gerar() {
+  const input = document.getElementById('input').value.trim();
+  const resultText = document.getElementById('result-text');
+  const numText = document.getElementById('num-text');
+  const copyId = document.getElementById('copy-id');
+  const copyNum = document.getElementById('copy-num');
+
+  if (!input) {
+    resultText.textContent = 'resultado aqui';
+    numText.textContent = 'número aqui';
+    copyId.style.display = 'none';
+    copyNum.style.display = 'none';
+    return;
+  }
+
+  const { numero, nome } = extrairPartes(input);
+
+  numText.textContent = numero || '—';
+  copyNum.style.display = numero ? 'inline-flex' : 'none';
+
+  resultText.textContent = nome || '—';
+  copyId.style.display = nome ? 'inline-flex' : 'none';
+
+  if (nome) {
+    logs.push({
+      numero,
+      nome,
+      data: new Date().toISOString(),
+      original: input
+    });
+
+    if (logs.length > 200) {
+      logs.splice(0, logs.length - 200);
+    }
+
+    renderizarLogs();
+  }
+}
+
+function exportarTxt() {
+  if (!logs.length) return;
+
+  const linhas = [
+    '========================================',
+    '  LOG DE IDENTIFICADORES GERADOS',
+    `  Exportado em: ${formatarData(new Date().toISOString())}`,
+    `  Total de registros: ${logs.length}`,
+    '========================================',
+    ''
+  ];
+
+  [...logs].reverse().forEach((l, i) => {
+    linhas.push(`[${String(i + 1).padStart(3, '0')}] ${formatarData(l.data)}`);
+    linhas.push(`  Original  : ${l.original}`);
+
+    if (l.numero) {
+      linhas.push(`  Número    : ${l.numero}`);
+    }
+
+    linhas.push(`  Identif.  : ${l.nome}`);
+    linhas.push('');
+  });
+
+  linhas.push('========================================');
+
+  const blob = new Blob([linhas.join('\n')], {
+    type: 'text/plain;charset=utf-8'
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoje = new Date();
+
+  a.href = url;
+  a.download = `logs_${String(hoje.getDate()).padStart(2, '0')}${String(hoje.getMonth() + 1).padStart(2, '0')}${hoje.getFullYear()}.txt`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function limparLogs() {
+  logs = [];
+  renderizarLogs();
+}
+
+function copiar(textId, btnId) {
+  const elemento = document.getElementById(textId);
+  const btn = document.getElementById(btnId);
+
+  if (!elemento || !btn) {
+    alert('Não foi possível copiar.');
+    return;
+  }
+
+  const texto = elemento.textContent.trim();
+
+  if (!texto || texto === '—' || texto === 'número aqui' || texto === 'resultado aqui') {
+    alert('Não há conteúdo para copiar.');
+    return;
+  }
+
+  const original = btn.innerHTML;
+
+  function feedbackCopiado() {
+    btn.innerHTML = '<i class="bi bi-check2"></i> Copiado';
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-outline-secondary');
+    }, 1600);
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(texto).then(feedbackCopiado).catch(() => {
+      copiarFallback(texto, feedbackCopiado);
+    });
+  } else {
+    copiarFallback(texto, feedbackCopiado);
+  }
+}
+
+function copiarFallback(texto, callback) {
+  const temp = document.createElement('textarea');
+  temp.value = texto;
+  temp.style.position = 'fixed';
+  temp.style.left = '-9999px';
+  temp.style.top = '-9999px';
+
+  document.body.appendChild(temp);
+  temp.focus();
+  temp.select();
+
+  try {
+    document.execCommand('copy');
+    callback();
+  } catch (e) {
+    alert('Não foi possível copiar automaticamente.');
+  }
+
+  document.body.removeChild(temp);
+}
+
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    gerar();
+  }
+});
+</script>
+{% endblock %}
