@@ -84,6 +84,19 @@ CREATE TABLE IF NOT EXISTS consulta_sql (
     FOREIGN KEY (banco_id) REFERENCES banco_mapeado(id)
 );
 
+CREATE TABLE IF NOT EXISTS scripts_sql_consultas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    script_id INTEGER NOT NULL,
+    nome_tabela TEXT,
+    titulo TEXT NOT NULL,
+    sql TEXT NOT NULL,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (script_id) REFERENCES scripts_sql(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_scripts_sql_busca ON scripts_sql (titulo, tipo_banco, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_correcoes_n2_busca ON correcoes_n2 (titulo, sistema, categoria, criticidade, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_anexos_origem ON anexos (tipo_origem, origem_id, deleted_at);

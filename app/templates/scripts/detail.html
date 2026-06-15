@@ -1,126 +1,224 @@
 {% extends 'base.html' %}
+
 {% block title %}{{ script.titulo }}{% endblock %}
+
 {% block content %}
 <div class="page-heading">
   <div>
-    <div class="breadcrumb-lite"><a href="{{ url_for('main.scripts_index') }}">Scripts SQL</a> / {{ script.titulo }}</div>
-    <h1>{{ script.titulo }} <span class="badge text-bg-light border">{{ script.tipo_banco }}</span></h1>
+    <div class="breadcrumb-lite">
+      <a href="{{ url_for('main.scripts_index') }}">Scripts SQL</a> / {{ script.titulo }}
+    </div>
+
+    <h1>
+      {{ script.titulo }}
+      <span class="badge text-bg-light border">{{ script.tipo_banco }}</span>
+    </h1>
   </div>
+
   <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-primary" data-copy-sql onclick="copySql()">
-  <i class="bi bi-clipboard"></i> Copiar SQL
-</button>
+    {% if consultas %}
+      <button type="button" class="btn btn-outline-primary" onclick="copiarTodasConsultas()">
+        <i class="bi bi-clipboard"></i> Copiar Todos
+      </button>
+    {% endif %}
+
     {% if is_admin %}
-      <a class="btn btn-warning" href="{{ url_for('main.scripts_edit', script_id=script.id) }}"><i class="bi bi-pencil"></i> Editar</a>
-      <form method="post" action="{{ url_for('main.scripts_delete', script_id=script.id) }}" onsubmit="return confirm('Excluir logicamente este script?')"><button class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button></form>
+      <a class="btn btn-warning" href="{{ url_for('main.scripts_edit', script_id=script.id) }}">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+
+      <form method="post" action="{{ url_for('main.scripts_delete', script_id=script.id) }}" onsubmit="return confirm('Excluir logicamente este script?')">
+        <button class="btn btn-danger">
+          <i class="bi bi-trash"></i> Excluir
+        </button>
+      </form>
     {% endif %}
   </div>
 </div>
+
 <div class="row g-4">
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm"><div class="card-body">
-      <h5>Descrição</h5><p>{{ script.descricao|nl2br }}</p><hr>
-      <h5>Observações</h5><p>{{ script.observacoes|default('Sem observações.', true)|nl2br }}</p><hr>
-      <p class="small text-muted mb-1">Criado em: {{ script.created_at }}</p>
-      <p class="small text-muted mb-0">Atualizado em: {{ script.updated_at }}</p>
-    </div></div>
-  </div>
-  <div class="col-lg-8">
     <div class="card border-0 shadow-sm">
-  <div class="card-header bg-body d-flex justify-content-between">
-    <strong>Código SQL</strong>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-sql onclick="copySql()">
-      Copiar
-    </button>
+      <div class="card-body">
+        <h5>Descrição</h5>
+        <p>{{ script.descricao|nl2br }}</p>
+
+        <hr>
+
+        <h5>Observações</h5>
+        <p>{{ script.observacoes|default('Sem observações.', true)|nl2br }}</p>
+
+        <hr>
+
+        <p class="small text-muted mb-1">Criado em: {{ script.created_at }}</p>
+        <p class="small text-muted mb-0">Atualizado em: {{ script.updated_at }}</p>
+      </div>
+    </div>
   </div>
 
-  <div class="card-body">
-    <textarea id="codigo-sql" class="code-editor">{{ script.codigo_sql }}</textarea>
-  </div>
-</div>
+  <div class="col-lg-8">
+    {% if consultas %}
+      {% for consulta in consultas %}
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-body d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ consulta.titulo }}</strong>
+              <span class="badge text-bg-light border">Ordem {{ consulta.ordem }}</span>
+
+              {% if consulta.nome_tabela %}
+                <br>
+                <small class="text-muted">
+                  <i class="bi bi-table"></i>
+                  {{ consulta.nome_tabela }}
+                </small>
+              {% endif %}
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              onclick="copiarConsultaScript('script-sql-{{ consulta.id }}', this)"
+            >
+              <i class="bi bi-clipboard"></i> Copiar
+            </button>
+          </div>
+
+          <div class="card-body">
+            <textarea id="script-sql-{{ consulta.id }}" class="code-editor">{{ consulta.sql }}</textarea>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-body d-flex justify-content-between align-items-center">
+          <strong>Código SQL</strong>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            onclick="copiarConsultaScript('codigo-sql-legado', this)"
+          >
+            <i class="bi bi-clipboard"></i> Copiar
+          </button>
+        </div>
+
+        <div class="card-body">
+          <textarea id="codigo-sql-legado" class="code-editor">{{ script.codigo_sql }}</textarea>
+        </div>
+      </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
-  let sqlEditor = null;
+  const scriptConsultaEditors = {};
 
-  if (window.initSqlEditor) {
-    sqlEditor = window.initSqlEditor('codigo-sql', true);
-  }
+  {% if consultas %}
+    {% for consulta in consultas %}
+      if (window.initSqlEditor) {
+        scriptConsultaEditors["script-sql-{{ consulta.id }}"] = window.initSqlEditor("script-sql-{{ consulta.id }}", true);
+      }
+    {% endfor %}
+  {% else %}
+    if (window.initSqlEditor) {
+      scriptConsultaEditors["codigo-sql-legado"] = window.initSqlEditor("codigo-sql-legado", true);
+    }
+  {% endif %}
 
-  function copySql() {
-    let text = "";
-
-    if (sqlEditor && typeof sqlEditor.getValue === "function") {
-      text = sqlEditor.getValue();
-    } else {
-      const textarea = document.getElementById("codigo-sql");
-      text = textarea ? textarea.value : "";
+  function obterTextoSql(id) {
+    if (scriptConsultaEditors[id] && typeof scriptConsultaEditors[id].getValue === "function") {
+      return scriptConsultaEditors[id].getValue();
     }
 
-    if (!text.trim()) {
-      alert("Não foi possível encontrar o código SQL para copiar.");
+    const textarea = document.getElementById(id);
+    return textarea ? textarea.value : "";
+  }
+
+  function copiarConsultaScript(id, botao) {
+    const texto = obterTextoSql(id);
+
+    if (!texto.trim()) {
+      alert("Consulta vazia.");
       return;
     }
 
-    function showCopiedFeedback() {
-      const buttons = document.querySelectorAll("[data-copy-sql]");
+    copiarTextoSql(texto, botao);
+  }
 
-      buttons.forEach(function (btn) {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "Copiado!";
-        btn.classList.remove("btn-outline-primary", "btn-outline-secondary");
-        btn.classList.add("btn-success");
+  function copiarTodasConsultas() {
+    let textos = [];
 
-        setTimeout(function () {
-          btn.innerHTML = originalText;
-          btn.classList.remove("btn-success");
+    {% for consulta in consultas %}
+      textos.push("-- {{ consulta.titulo }}\n" + obterTextoSql("script-sql-{{ consulta.id }}"));
+    {% endfor %}
 
-          if (btn.classList.contains("btn-sm")) {
-            btn.classList.add("btn-outline-secondary");
-          } else {
-            btn.classList.add("btn-outline-primary");
-          }
-        }, 1500);
-      });
+    const textoFinal = textos.join("\n\n");
+
+    if (!textoFinal.trim()) {
+      alert("Nenhuma consulta para copiar.");
+      return;
+    }
+
+    copiarTextoSql(textoFinal, null);
+  }
+
+  function copiarTextoSql(texto, botao) {
+    function feedback() {
+      if (!botao) {
+        mostrarAlertaCopiado("SQLs copiados.");
+        return;
+      }
+
+      const original = botao.innerHTML;
+
+      botao.innerHTML = '<i class="bi bi-check2"></i> Copiado';
+      botao.classList.remove("btn-outline-secondary");
+      botao.classList.add("btn-success");
+
+      setTimeout(function () {
+        botao.innerHTML = original;
+        botao.classList.remove("btn-success");
+        botao.classList.add("btn-outline-secondary");
+      }, 1500);
     }
 
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(showCopiedFeedback).catch(function () {
-        fallbackCopy(text);
+      navigator.clipboard.writeText(texto).then(feedback).catch(function () {
+        copiarTextoFallback(texto, feedback);
       });
     } else {
-      fallbackCopy(text);
+      copiarTextoFallback(texto, feedback);
     }
   }
 
-  function fallbackCopy(text) {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "-9999px";
+  function copiarTextoFallback(texto, callback) {
+    const temp = document.createElement("textarea");
+    temp.value = texto;
+    temp.style.position = "fixed";
+    temp.style.left = "-9999px";
+    temp.style.top = "-9999px";
 
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
+    document.body.appendChild(temp);
+    temp.focus();
+    temp.select();
 
     try {
       document.execCommand("copy");
-      showTemporaryAlert("SQL copiado.");
+      callback();
     } catch (e) {
-      alert("Não foi possível copiar automaticamente. Selecione o SQL e copie manualmente.");
+      alert("Não foi possível copiar automaticamente.");
     }
 
-    document.body.removeChild(textarea);
+    document.body.removeChild(temp);
   }
 
-  function showTemporaryAlert(message) {
+  function mostrarAlertaCopiado(mensagem) {
     const alertBox = document.createElement("div");
     alertBox.className = "alert alert-success position-fixed top-0 end-0 m-3";
     alertBox.style.zIndex = "9999";
-    alertBox.innerText = message;
+    alertBox.innerText = mensagem;
 
     document.body.appendChild(alertBox);
 

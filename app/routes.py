@@ -107,20 +107,62 @@ def scripts_index():
     db = get_db()
     q = request.args.get("q", "").strip()
     tipo_banco = request.args.get("tipo_banco", "").strip()
+
     params = []
-    where = ["deleted_at IS NULL"]
+    where = ["s.deleted_at IS NULL"]
+
     if q:
         like = f"%{q}%"
-        where.append("(titulo LIKE ? OR descricao LIKE ? OR codigo_sql LIKE ? OR observacoes LIKE ?)")
-        params.extend([like, like, like, like])
+        where.append(
+            """
+            (
+                s.titulo LIKE ?
+                OR s.descricao LIKE ?
+                OR s.codigo_sql LIKE ?
+                OR s.observacoes LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM scripts_sql_consultas c2
+                    WHERE c2.script_id = s.id
+                      AND c2.deleted_at IS NULL
+                      AND (
+                          c2.titulo LIKE ?
+                          OR c2.nome_tabela LIKE ?
+                          OR c2.sql LIKE ?
+                      )
+                )
+            )
+            """
+        )
+        params.extend([like, like, like, like, like, like, like])
+
     if tipo_banco:
-        where.append("tipo_banco = ?")
+        where.append("s.tipo_banco = ?")
         params.append(tipo_banco)
+
     rows = db.execute(
-        f"SELECT * FROM scripts_sql WHERE {' AND '.join(where)} ORDER BY updated_at DESC",
+        f"""
+        SELECT
+            s.*,
+            COUNT(c.id) AS total_consultas
+        FROM scripts_sql s
+        LEFT JOIN scripts_sql_consultas c
+          ON c.script_id = s.id
+         AND c.deleted_at IS NULL
+        WHERE {' AND '.join(where)}
+        GROUP BY s.id
+        ORDER BY s.updated_at DESC
+        """,
         params,
     ).fetchall()
-    return render_template("scripts/index.html", scripts=rows, tipos_banco=get_tipos_banco(), q=q, tipo_banco=tipo_banco)
+
+    return render_template(
+        "scripts/index.html",
+        scripts=rows,
+        tipos_banco=get_tipos_banco(),
+        q=q,
+        tipo_banco=tipo_banco
+    )
 
 
 @bp.route("/scripts/novo", methods=["GET", "POST"])
@@ -128,75 +170,258 @@ def scripts_index():
 def scripts_create():
     if request.method == "POST":
         return save_script()
-    return render_template("scripts/form.html", script=None, tipos_banco=get_tipos_banco())
+
+    return render_template(
+        "scripts/form.html",
+        script=None,
+        consultas=[],
+        tipos_banco=get_tipos_banco()
+    )
 
 
 @bp.route("/scripts/<int:script_id>")
 def scripts_detail(script_id):
-    script = get_db().execute(
-        "SELECT * FROM scripts_sql WHERE id = ? AND deleted_at IS NULL", (script_id,)
+    db = get_db()
+
+    script = db.execute(
+        """
+        SELECT *
+        FROM scripts_sql
+        WHERE id = ?
+          AND deleted_at IS NULL
+        """,
+        (script_id,)
     ).fetchone()
+
     if script is None:
         flash("Script SQL não encontrado.", "warning")
         return redirect(url_for("main.scripts_index"))
-    return render_template("scripts/detail.html", script=script)
+
+    consultas = db.execute(
+        """
+        SELECT *
+        FROM scripts_sql_consultas
+        WHERE script_id = ?
+          AND deleted_at IS NULL
+        ORDER BY ordem ASC, id ASC
+        """,
+        (script_id,)
+    ).fetchall()
+
+    return render_template(
+        "scripts/detail.html",
+        script=script,
+        consultas=consultas
+    )
 
 
 @bp.route("/scripts/<int:script_id>/editar", methods=["GET", "POST"])
 @login_required
 def scripts_edit(script_id):
-    script = get_db().execute(
-        "SELECT * FROM scripts_sql WHERE id = ? AND deleted_at IS NULL", (script_id,)
+    db = get_db()
+
+    script = db.execute(
+        """
+        SELECT *
+        FROM scripts_sql
+        WHERE id = ?
+          AND deleted_at IS NULL
+        """,
+        (script_id,)
     ).fetchone()
+
     if script is None:
         flash("Script SQL não encontrado.", "warning")
         return redirect(url_for("main.scripts_index"))
+
     if request.method == "POST":
         return save_script(script_id)
-    return render_template("scripts/form.html", script=script, tipos_banco=get_tipos_banco())
+
+    consultas = db.execute(
+        """
+        SELECT *
+        FROM scripts_sql_consultas
+        WHERE script_id = ?
+          AND deleted_at IS NULL
+        ORDER BY ordem ASC, id ASC
+        """,
+        (script_id,)
+    ).fetchall()
+
+    return render_template(
+        "scripts/form.html",
+        script=script,
+        consultas=consultas,
+        tipos_banco=get_tipos_banco()
+    )
 
 
 @bp.route("/scripts/<int:script_id>/excluir", methods=["POST"])
 @login_required
 def scripts_delete(script_id):
-    soft_delete("scripts_sql", script_id)
+    db = get_db()
+    timestamp = now()
+
+    db.execute(
+        """
+        UPDATE scripts_sql
+        SET deleted_at = ?,
+            updated_at = ?
+        WHERE id = ?
+        """,
+        (timestamp, timestamp, script_id)
+    )
+
+    db.execute(
+        """
+        UPDATE scripts_sql_consultas
+        SET deleted_at = ?,
+            updated_at = ?
+        WHERE script_id = ?
+        """,
+        (timestamp, timestamp, script_id)
+    )
+
+    db.commit()
+
     flash("Script SQL excluído logicamente.", "success")
     return redirect(url_for("main.scripts_index"))
 
 
 def save_script(script_id=None):
     db = get_db()
+
     titulo = request.form.get("titulo", "").strip()
     tipo_banco = request.form.get("tipo_banco_novo", "").strip() or request.form.get("tipo_banco", "").strip()
     descricao = request.form.get("descricao", "").strip()
-    codigo_sql = request.form.get("codigo_sql", "").strip()
     observacoes = request.form.get("observacoes", "").strip()
-    if not all([titulo, tipo_banco, descricao, codigo_sql]):
-        flash("Preencha título, tipo de banco, descrição e código SQL.", "warning")
+
+    tabelas = request.form.getlist("consulta_tabela[]")
+    titulos = request.form.getlist("consulta_titulo[]")
+    sqls = request.form.getlist("consulta_sql[]")
+
+    consultas_validas = []
+
+    for index, titulo_consulta in enumerate(titulos):
+        titulo_consulta = titulo_consulta.strip()
+        sql = sqls[index].strip() if index < len(sqls) else ""
+        nome_tabela = tabelas[index].strip() if index < len(tabelas) else ""
+
+        if titulo_consulta and sql:
+            consultas_validas.append({
+                "nome_tabela": nome_tabela,
+                "titulo": titulo_consulta,
+                "sql": sql,
+                "ordem": index + 1
+            })
+
+    if not titulo or not tipo_banco or not descricao:
+        flash("Preencha título, tipo de banco e descrição.", "warning")
         return redirect(request.url)
+
+    if not consultas_validas:
+        flash("Adicione pelo menos uma consulta SQL.", "warning")
+        return redirect(request.url)
+
     save_tipo_banco_if_new(tipo_banco)
+
     timestamp = now()
+
+    codigo_sql_principal = consultas_validas[0]["sql"]
+
     if script_id:
         db.execute(
             """
-            UPDATE scripts_sql SET titulo=?, tipo_banco=?, descricao=?, codigo_sql=?, observacoes=?, updated_at=?
-            WHERE id=? AND deleted_at IS NULL
+            UPDATE scripts_sql
+            SET titulo = ?,
+                tipo_banco = ?,
+                descricao = ?,
+                codigo_sql = ?,
+                observacoes = ?,
+                updated_at = ?
+            WHERE id = ?
+              AND deleted_at IS NULL
             """,
-            (titulo, tipo_banco, descricao, codigo_sql, observacoes, timestamp, script_id),
+            (
+                titulo,
+                tipo_banco,
+                descricao,
+                codigo_sql_principal,
+                observacoes,
+                timestamp,
+                script_id
+            )
         )
-        flash("Script SQL atualizado com sucesso.", "success")
-    else:
+
         db.execute(
             """
-            INSERT INTO scripts_sql (titulo, tipo_banco, descricao, codigo_sql, observacoes, created_at, updated_at)
+            UPDATE scripts_sql_consultas
+            SET deleted_at = ?,
+                updated_at = ?
+            WHERE script_id = ?
+            """,
+            (timestamp, timestamp, script_id)
+        )
+
+        target_id = script_id
+        flash("Script SQL atualizado com sucesso.", "success")
+
+    else:
+        cur = db.execute(
+            """
+            INSERT INTO scripts_sql (
+                titulo,
+                tipo_banco,
+                descricao,
+                codigo_sql,
+                observacoes,
+                created_at,
+                updated_at
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (titulo, tipo_banco, descricao, codigo_sql, observacoes, timestamp, timestamp),
+            (
+                titulo,
+                tipo_banco,
+                descricao,
+                codigo_sql_principal,
+                observacoes,
+                timestamp,
+                timestamp
+            )
         )
-        flash("Script SQL cadastrado com sucesso.", "success")
-    db.commit()
-    return redirect(url_for("main.scripts_index"))
 
+        target_id = cur.lastrowid
+        flash("Script SQL cadastrado com sucesso.", "success")
+
+    for consulta in consultas_validas:
+        db.execute(
+            """
+            INSERT INTO scripts_sql_consultas (
+                script_id,
+                nome_tabela,
+                titulo,
+                sql,
+                ordem,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                target_id,
+                consulta["nome_tabela"],
+                consulta["titulo"],
+                consulta["sql"],
+                consulta["ordem"],
+                timestamp,
+                timestamp
+            )
+        )
+
+    db.commit()
+
+    return redirect(url_for("main.scripts_detail", script_id=target_id))
 
 @bp.route("/correcoes")
 def correcoes_index():

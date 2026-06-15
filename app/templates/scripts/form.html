@@ -1,37 +1,269 @@
 {% extends 'base.html' %}
+
 {% block title %}{{ 'Editar' if script else 'Novo' }} Script SQL{% endblock %}
+
 {% block content %}
-<div class="page-heading"><div><h1>{{ 'Editar' if script else 'Novo' }} Script SQL</h1><p>Cadastre scripts com CodeMirror e dados de segurança.</p></div></div>
-<form method="post" class="card border-0 shadow-sm">
-  <div class="card-body row g-3">
-    <div class="col-lg-8">
-      <label class="form-label">Título</label>
-      <input name="titulo" class="form-control" value="{{ script.titulo if script else '' }}" required>
+<div class="page-heading">
+  <div>
+    <h1>{{ 'Editar' if script else 'Novo' }} Script SQL</h1>
+    <p>Cadastre um script com uma ou várias consultas SQL vinculadas.</p>
+  </div>
+</div>
+
+<form method="post" id="form-script-sql" class="card border-0 shadow-sm">
+  <div class="card-body">
+
+    <h5 class="mb-3">Dados do Script</h5>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <label class="form-label">Título</label>
+        <input
+          name="titulo"
+          class="form-control"
+          value="{{ script.titulo if script else '' }}"
+          required>
+      </div>
+
+      <div class="col-lg-4">
+        <label class="form-label">Tipo de banco</label>
+
+        <select name="tipo_banco" class="form-select">
+          {% for tipo in tipos_banco %}
+            <option value="{{ tipo.nome }}" {% if script and script.tipo_banco == tipo.nome %}selected{% endif %}>
+              {{ tipo.nome }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <input
+          name="tipo_banco_novo"
+          class="form-control mt-2"
+          placeholder="Ou adicionar novo tipo">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Descrição</label>
+        <textarea
+          name="descricao"
+          class="form-control"
+          rows="3"
+          required>{{ script.descricao if script else '' }}</textarea>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Observações</label>
+        <textarea
+          name="observacoes"
+          class="form-control"
+          rows="3">{{ script.observacoes if script else '' }}</textarea>
+      </div>
     </div>
-    <div class="col-lg-4">
-      <label class="form-label">Tipo de banco</label>
-      <select name="tipo_banco" class="form-select">
-        {% for tipo in tipos_banco %}<option value="{{ tipo.nome }}" {% if script and script.tipo_banco == tipo.nome %}selected{% endif %}>{{ tipo.nome }}</option>{% endfor %}
-      </select>
-      <input name="tipo_banco_novo" class="form-control mt-2" placeholder="Ou adicionar novo tipo">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Consultas SQL</h5>
+
+      <button type="button" class="btn btn-outline-primary" onclick="adicionarConsultaScript()">
+        <i class="bi bi-plus-lg"></i> Adicionar Consulta
+      </button>
     </div>
-    <div class="col-12">
-      <label class="form-label">Descrição</label>
-      <textarea name="descricao" class="form-control" rows="3" required>{{ script.descricao if script else '' }}</textarea>
-    </div>
-    <div class="col-12">
-      <label class="form-label">Código SQL</label>
-      <textarea name="codigo_sql" id="codigo_sql" class="form-control code-editor" rows="14">{{ script.codigo_sql if script else '' }}</textarea>
-    </div>
-    <div class="col-12">
-      <label class="form-label">Observações</label>
-      <textarea name="observacoes" class="form-control" rows="3">{{ script.observacoes if script else '' }}</textarea>
+
+    <div id="consultas-script-container">
+      {% if consultas %}
+        {% for consulta in consultas %}
+          <div class="consulta-script-bloco card border shadow-sm mb-3">
+            <div class="card-header bg-body d-flex justify-content-between align-items-center">
+              <strong>Consulta SQL</strong>
+
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsultaScript(this)">
+                <i class="bi bi-trash"></i> Remover
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Tabela Origem</label>
+                  <input
+                    name="consulta_tabela[]"
+                    class="form-control"
+                    value="{{ consulta.nome_tabela or '' }}"
+                    placeholder="Ex: Cadastro de Clientes">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Título da Consulta</label>
+                  <input
+                    name="consulta_titulo[]"
+                    class="form-control"
+                    value="{{ consulta.titulo }}"
+                    required
+                    placeholder="Ex: 01_Import_Clientes">
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">SQL</label>
+                  <textarea
+                    name="consulta_sql[]"
+                    class="form-control sql-editor"
+                    rows="8"
+                    placeholder="SELECT * FROM tabela;">{{ consulta.sql }}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="consulta-script-bloco card border shadow-sm mb-3">
+          <div class="card-header bg-body d-flex justify-content-between align-items-center">
+            <strong>Consulta SQL</strong>
+
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsultaScript(this)">
+              <i class="bi bi-trash"></i> Remover
+            </button>
+          </div>
+
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Tabela Origem</label>
+                <input
+                  name="consulta_tabela[]"
+                  class="form-control"
+                  placeholder="Ex: Cadastro de Clientes">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Título da Consulta</label>
+                <input
+                  name="consulta_titulo[]"
+                  class="form-control"
+                  required
+                  placeholder="Ex: 01_Import_Clientes">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">SQL</label>
+                <textarea
+                  name="consulta_sql[]"
+                  class="form-control sql-editor"
+                  rows="8"
+                  placeholder="SELECT * FROM tabela;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
     </div>
   </div>
+
   <div class="card-footer bg-body d-flex justify-content-end gap-2">
-    <a href="{{ url_for('main.scripts_index') }}" class="btn btn-light border">Cancelar</a>
-    <button class="btn btn-primary">Salvar</button>
+    <a href="{{ url_for('main.scripts_index') }}" class="btn btn-light border">
+      Cancelar
+    </a>
+
+    <button class="btn btn-primary">
+      <i class="bi bi-save"></i> Salvar
+    </button>
   </div>
 </form>
 {% endblock %}
-{% block scripts %}<script>window.initSqlEditor && window.initSqlEditor('codigo_sql', false);</script>{% endblock %}
+
+{% block scripts %}
+<script>
+  let scriptEditors = [];
+
+  function inicializarScriptEditors() {
+    scriptEditors = [];
+
+    document.querySelectorAll('.sql-editor').forEach(function(textarea) {
+      if (textarea.dataset.editorAtivo === '1') {
+        return;
+      }
+
+      textarea.dataset.editorAtivo = '1';
+
+      if (typeof CodeMirror !== 'undefined') {
+        const editor = CodeMirror.fromTextArea(textarea, {
+          mode: 'text/x-sql',
+          theme: 'material-darker',
+          lineNumbers: true,
+          lineWrapping: true,
+          viewportMargin: Infinity
+        });
+
+        scriptEditors.push(editor);
+      }
+    });
+  }
+
+  function adicionarConsultaScript() {
+    const container = document.getElementById('consultas-script-container');
+
+    const bloco = document.createElement('div');
+    bloco.className = 'consulta-script-bloco card border shadow-sm mb-3';
+
+    bloco.innerHTML = `
+      <div class="card-header bg-body d-flex justify-content-between align-items-center">
+        <strong>Consulta SQL</strong>
+
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerConsultaScript(this)">
+          <i class="bi bi-trash"></i> Remover
+        </button>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Tabela Origem</label>
+            <input
+              name="consulta_tabela[]"
+              class="form-control"
+              placeholder="Ex: Cadastro de Produtos">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Título da Consulta</label>
+            <input
+              name="consulta_titulo[]"
+              class="form-control"
+              required
+              placeholder="Ex: 02_Import_Produtos">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">SQL</label>
+            <textarea
+              name="consulta_sql[]"
+              class="form-control sql-editor"
+              rows="8"
+              placeholder="SELECT * FROM tabela;"></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(bloco);
+    inicializarScriptEditors();
+  }
+
+  function removerConsultaScript(botao) {
+    const blocos = document.querySelectorAll('.consulta-script-bloco');
+
+    if (blocos.length <= 1) {
+      alert('É necessário manter pelo menos uma consulta.');
+      return;
+    }
+
+    botao.closest('.consulta-script-bloco').remove();
+  }
+
+  document.addEventListener('DOMContentLoaded', inicializarScriptEditors);
+
+  document.getElementById('form-script-sql').addEventListener('submit', function () {
+    scriptEditors.forEach(function(editor) {
+      editor.save();
+    });
+  });
+</script>
+{% endblock %}
