@@ -1,19 +1,129 @@
 {% extends 'base.html' %}
+
 {% block title %}{{ 'Editar' if correcao else 'Nova' }} Correção N2{% endblock %}
+
 {% block content %}
-<div class="page-heading"><div><h1>{{ 'Editar' if correcao else 'Nova' }} Correção N2</h1><p>Registre erro, causa, solução e imagens anexas.</p></div></div>
+<div class="page-heading">
+  <div>
+    <h1>{{ 'Editar' if correcao else 'Nova' }} Correção N2</h1>
+    <p>Registre erro, causa, solução e imagens anexas.</p>
+  </div>
+</div>
+
 <form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
   <div class="card-body row g-3">
-    <div class="col-lg-8"><label class="form-label">Título da demanda</label><input name="titulo" class="form-control" value="{{ correcao.titulo if correcao else '' }}" required></div>
-    <div class="col-lg-4"><label class="form-label">Criticidade</label><select name="criticidade" class="form-select">{% for c in criticidades %}<option {% if correcao and correcao.criticidade == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
-    <div class="col-lg-6"><label class="form-label">Sistema relacionado</label><select name="sistema" class="form-select">{% for s in sistemas %}<option {% if correcao and correcao.sistema == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select><input name="sistema_novo" class="form-control mt-2" placeholder="Ou adicionar novo sistema"></div>
-    <div class="col-lg-6"><label class="form-label">Categoria</label><select name="categoria" class="form-select">{% for c in categorias %}<option {% if correcao and correcao.categoria == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><input name="categoria_nova" class="form-control mt-2" placeholder="Ou adicionar nova categoria"></div>
-    <div class="col-12"><label class="form-label">Erro apresentado</label><textarea name="erro" class="form-control" rows="3" required>{{ correcao.erro if correcao else '' }}</textarea></div>
-    <div class="col-12"><label class="form-label">Causa provável</label><textarea name="causa" class="form-control" rows="3" required>{{ correcao.causa if correcao else '' }}</textarea></div>
-    <div class="col-12"><label class="form-label">Correção aplicada</label><textarea name="correcao" class="form-control" rows="6" required>{{ correcao.correcao if correcao else '' }}</textarea></div>
-    <div class="col-12"><label class="form-label">Imagens anexas JPG/JPEG/PNG</label><input name="imagens" type="file" class="form-control" accept=".jpg,.jpeg,.png" multiple></div>
-    {% if anexos %}<div class="col-12"><h5>Anexos atuais</h5><div class="row g-3">{% for anexo in anexos %}<div class="col-md-3"><div class="attachment-card"><img src="{{ url_for('static', filename=anexo.caminho_arquivo) }}" alt="{{ anexo.nome_arquivo }}"><div class="p-2 small text-truncate">{{ anexo.nome_arquivo }}</div><form method="post" action="{{ url_for('main.anexo_delete', anexo_id=anexo.id) }}"><button class="btn btn-sm btn-outline-danger w-100">Remover</button></form></div></div>{% endfor %}</div></div>{% endif %}
+
+    <div class="col-lg-8">
+      <label class="form-label">Título da demanda</label>
+      <input name="titulo" class="form-control" value="{{ correcao.titulo if correcao else '' }}" required>
+    </div>
+
+    <div class="col-lg-4">
+      <label class="form-label">Criticidade</label>
+      <select name="criticidade" class="form-select">
+        {% for c in criticidades %}
+          <option {% if correcao and correcao.criticidade == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-lg-6">
+      <label class="form-label">Sistema relacionado</label>
+      <select name="sistema" class="form-select">
+        {% for s in sistemas %}
+          <option {% if correcao and correcao.sistema == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <input name="sistema_novo" class="form-control mt-2" placeholder="Ou adicionar novo sistema">
+    </div>
+
+    <div class="col-lg-6">
+      <label class="form-label">Categoria</label>
+      <select name="categoria" class="form-select">
+        {% for c in categorias %}
+          <option {% if correcao and correcao.categoria == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+      <input name="categoria_nova" class="form-control mt-2" placeholder="Ou adicionar nova categoria">
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Erro apresentado</label>
+      <textarea
+        name="erro"
+        id="erro-editor"
+        class="form-control code-editor"
+        rows="6"
+        required>{{ correcao.erro if correcao else '' }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Causa provável</label>
+      <textarea
+        name="causa"
+        class="form-control"
+        rows="3"
+        required>{{ correcao.causa if correcao else '' }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Correção aplicada</label>
+      <textarea
+        name="correcao"
+        id="correcao-editor"
+        class="form-control code-editor"
+        rows="10"
+        required>{{ correcao.correcao if correcao else '' }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Imagens anexas JPG/JPEG/PNG</label>
+      <input name="imagens" type="file" class="form-control" accept=".jpg,.jpeg,.png" multiple>
+    </div>
+
+    {% if anexos %}
+      <div class="col-12">
+        <h5>Anexos atuais</h5>
+
+        <div class="row g-3">
+          {% for anexo in anexos %}
+            <div class="col-md-3">
+              <div class="attachment-card">
+                <img src="{{ url_for('static', filename=anexo.caminho_arquivo) }}" alt="{{ anexo.nome_arquivo }}">
+
+                <div class="p-2 small text-truncate">
+                  {{ anexo.nome_arquivo }}
+                </div>
+
+                <form method="post" action="{{ url_for('main.anexo_delete', anexo_id=anexo.id) }}">
+                  <button class="btn btn-sm btn-outline-danger w-100">
+                    Remover
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
   </div>
-  <div class="card-footer bg-body d-flex justify-content-end gap-2"><a href="{{ url_for('main.correcoes_index') }}" class="btn btn-light border">Cancelar</a><button class="btn btn-primary">Salvar</button></div>
+
+  <div class="card-footer bg-body d-flex justify-content-end gap-2">
+    <a href="{{ url_for('main.correcoes_index') }}" class="btn btn-light border">
+      Cancelar
+    </a>
+
+    <button class="btn btn-primary">
+      Salvar
+    </button>
+  </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.initSqlEditor && window.initSqlEditor('erro-editor', false);
+  window.initSqlEditor && window.initSqlEditor('correcao-editor', false);
+</script>
 {% endblock %}
