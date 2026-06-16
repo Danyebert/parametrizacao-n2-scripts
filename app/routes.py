@@ -1021,3 +1021,82 @@ def salvar_banco_mapeado(banco_id=None):
 @bp.route("/gerador-link")
 def gerador_link():
     return render_template("gerador_link/index.html")
+
+
+@bp.route("/ferramentas-conversao")
+def ferramentas_conversao_index():
+    ferramentas_path = Path(current_app.root_path) / "static" / "ferramentas_conversao"
+    ferramentas_path.mkdir(parents=True, exist_ok=True)
+
+    ferramentas = []
+
+    for item in sorted(ferramentas_path.iterdir(), key=lambda p: p.name.lower()):
+        ferramentas.append({
+            "nome": item.name,
+            "tipo": "Pasta" if item.is_dir() else "Arquivo",
+            "caminho": f"ferramentas_conversao/{item.name}",
+            "url": url_for("main.ferramentas_conversao_download", nome=item.name)
+        })
+
+    return render_template(
+        "ferramentas_conversao/index.html",
+        ferramentas=ferramentas
+    )
+
+
+@bp.route("/ferramentas-conversao/download/<path:nome>")
+def ferramentas_conversao_download(nome):
+    ferramentas_path = Path(current_app.root_path) / "static" / "ferramentas_conversao"
+    item_path = ferramentas_path / nome
+
+    try:
+        item_path = item_path.resolve()
+        ferramentas_path = ferramentas_path.resolve()
+    except FileNotFoundError:
+        abort(404)
+
+    if not str(item_path).startswith(str(ferramentas_path)):
+        abort(403)
+
+    if not item_path.exists():
+        abort(404)
+
+    if item_path.is_file():
+        return send_file(
+            item_path,
+            as_attachment=True,
+            download_name=item_path.name
+        )
+
+    if item_path.is_dir():
+        arquivos = [p for p in item_path.iterdir() if p.is_file()]
+        compactados = [
+            p for p in arquivos
+            if p.suffix.lower() in [".rar", ".zip", ".7z"]
+        ]
+
+        if len(arquivos) == 1 and len(compactados) == 1:
+            arquivo = compactados[0]
+
+            return send_file(
+                arquivo,
+                as_attachment=True,
+                download_name=arquivo.name
+            )
+
+        temp_dir = Path(tempfile.gettempdir())
+        zip_base = temp_dir / item_path.name
+
+        zip_path = shutil.make_archive(
+            base_name=str(zip_base),
+            format="zip",
+            root_dir=item_path
+        )
+
+        return send_file(
+            zip_path,
+            as_attachment=True,
+            download_name=f"{item_path.name}.zip"
+        )
+
+    abort(404)
