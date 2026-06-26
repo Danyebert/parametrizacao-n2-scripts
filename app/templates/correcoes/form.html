@@ -10,7 +10,7 @@
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm">
+<form method="post" enctype="multipart/form-data" id="form-correcao-n2" class="card border-0 shadow-sm">
   <div class="card-body row g-3">
 
     <div class="col-lg-8">
@@ -49,31 +49,17 @@
 
     <div class="col-12">
       <label class="form-label">Erro apresentado</label>
-      <textarea
-        name="erro"
-        id="erro-editor"
-        class="form-control code-editor"
-        rows="6"
-        required>{{ correcao.erro if correcao else '' }}</textarea>
+      <textarea name="erro" id="erro-editor" class="form-control code-editor" rows="6">{{ correcao.erro if correcao else '' }}</textarea>
     </div>
 
     <div class="col-12">
       <label class="form-label">Causa provável</label>
-      <textarea
-        name="causa"
-        class="form-control"
-        rows="3"
-        required>{{ correcao.causa if correcao else '' }}</textarea>
+      <textarea name="causa" class="form-control" rows="3" required>{{ correcao.causa if correcao else '' }}</textarea>
     </div>
 
     <div class="col-12">
       <label class="form-label">Correção aplicada</label>
-      <textarea
-        name="correcao"
-        id="correcao-editor"
-        class="form-control code-editor"
-        rows="10"
-        required>{{ correcao.correcao if correcao else '' }}</textarea>
+      <textarea name="correcao" id="correcao-editor" class="form-control code-editor" rows="10">{{ correcao.correcao if correcao else '' }}</textarea>
     </div>
 
     <div class="col-12">
@@ -84,21 +70,14 @@
     {% if anexos %}
       <div class="col-12">
         <h5>Anexos atuais</h5>
-
         <div class="row g-3">
           {% for anexo in anexos %}
             <div class="col-md-3">
               <div class="attachment-card">
                 <img src="{{ url_for('static', filename=anexo.caminho_arquivo) }}" alt="{{ anexo.nome_arquivo }}">
-
-                <div class="p-2 small text-truncate">
-                  {{ anexo.nome_arquivo }}
-                </div>
-
+                <div class="p-2 small text-truncate">{{ anexo.nome_arquivo }}</div>
                 <form method="post" action="{{ url_for('main.anexo_delete', anexo_id=anexo.id) }}">
-                  <button class="btn btn-sm btn-outline-danger w-100">
-                    Remover
-                  </button>
+                  <button class="btn btn-sm btn-outline-danger w-100">Remover</button>
                 </form>
               </div>
             </div>
@@ -110,20 +89,33 @@
   </div>
 
   <div class="card-footer bg-body d-flex justify-content-end gap-2">
-    <a href="{{ url_for('main.correcoes_index') }}" class="btn btn-light border">
-      Cancelar
-    </a>
-
-    <button class="btn btn-primary">
-      Salvar
-    </button>
+    <a href="{{ url_for('main.correcoes_index') }}" class="btn btn-light border">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Salvar</button>
   </div>
 </form>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  window.initSqlEditor && window.initSqlEditor('erro-editor', false);
-  window.initSqlEditor && window.initSqlEditor('correcao-editor', false);
+  const erroEditor = window.initSqlEditor ? window.initSqlEditor('erro-editor', false) : null;
+  const correcaoEditor = window.initSqlEditor ? window.initSqlEditor('correcao-editor', false) : null;
+
+  document.getElementById('form-correcao-n2').addEventListener('submit', function (event) {
+    if (erroEditor && typeof erroEditor.save === 'function') {
+      erroEditor.save();
+    }
+
+    if (correcaoEditor && typeof correcaoEditor.save === 'function') {
+      correcaoEditor.save();
+    }
+
+    const erro = document.getElementById('erro-editor').value.trim();
+    const correcao = document.getElementById('correcao-editor').value.trim();
+
+    if (!erro || !correcao) {
+      event.preventDefault();
+      alert('Preencha os campos Erro apresentado e Correção aplicada.');
+    }
+  });
 </script>
 {% endblock %}

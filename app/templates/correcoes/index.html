@@ -3,7 +3,30 @@
 {% block content %}
 <div class="page-heading">
   <div><h1>Correções N2</h1><p>Erros recorrentes, causas prováveis e soluções aplicadas.</p></div>
-  {% if is_admin %}<a class="btn btn-primary" href="{{ url_for('main.correcoes_create') }}"><i class="bi bi-plus-lg"></i> Nova Correção</a>{% endif %}
+ {% if is_admin %}
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-success" href="{{ url_for('main.correcoes_exportar_json') }}">
+      <i class="bi bi-download"></i> Exportar JSON
+    </a>
+
+    <form method="post" action="{{ url_for('main.correcoes_importar_json') }}" enctype="multipart/form-data" class="d-flex gap-2">
+      <input
+        type="file"
+        name="arquivo_json"
+        accept=".json"
+        class="form-control"
+        required>
+
+      <button class="btn btn-outline-warning">
+        <i class="bi bi-upload"></i> Importar
+      </button>
+    </form>
+
+    <a class="btn btn-primary" href="{{ url_for('main.correcoes_create') }}">
+      <i class="bi bi-plus-lg"></i> Nova Correção
+    </a>
+  </div>
+{% endif %}
 </div>
 <div class="card border-0 shadow-sm"><div class="card-body">
   <form class="row g-2 mb-3" method="get">

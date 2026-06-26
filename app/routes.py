@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 from flask import send_file, abort
+import json
 
 from flask import (
     Blueprint, current_app, flash, redirect, render_template, request, send_from_directory,
@@ -564,6 +565,95 @@ def handle_uploads(correcao_id):
             (correcao_id, original, caminho, timestamp, timestamp),
         )
     db.commit()
+
+@bp.route("/correcoes/exportar-json")
+@login_required
+def correcoes_exportar_json():
+    db = get_db()
+
+    correcoes = db.execute(
+        """
+        SELECT titulo, sistema, erro, causa, correcao, categoria, criticidade, created_at, updated_at
+        FROM correcoes_n2
+        WHERE deleted_at IS NULL
+        ORDER BY updated_at DESC
+        """
+    ).fetchall()
+
+    dados = [dict(row) for row in correcoes]
+
+    temp_path = Path(tempfile.gettempdir()) / "correcoes_n2_export.json"
+
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+
+    return send_file(
+        temp_path,
+        as_attachment=True,
+        download_name="correcoes_n2_export.json",
+        mimetype="application/json"
+    )
+
+
+@bp.route("/correcoes/importar-json", methods=["POST"])
+@login_required
+def correcoes_importar_json():
+    arquivo = request.files.get("arquivo_json")
+
+    if not arquivo or not arquivo.filename:
+        flash("Selecione um arquivo JSON.", "warning")
+        return redirect(url_for("main.correcoes_index"))
+
+    if not arquivo.filename.lower().endswith(".json"):
+        flash("Arquivo inválido. Envie um arquivo .json.", "danger")
+        return redirect(url_for("main.correcoes_index"))
+
+    try:
+        dados = json.load(arquivo)
+    except Exception:
+        flash("Não foi possível ler o arquivo JSON.", "danger")
+        return redirect(url_for("main.correcoes_index"))
+
+    if not isinstance(dados, list):
+        flash("JSON inválido. O arquivo precisa conter uma lista de correções.", "danger")
+        return redirect(url_for("main.correcoes_index"))
+
+    db = get_db()
+    timestamp = now()
+    total = 0
+
+    for item in dados:
+        titulo = str(item.get("titulo", "")).strip()
+        sistema = str(item.get("sistema", "")).strip()
+        erro = str(item.get("erro", "")).strip()
+        causa = str(item.get("causa", "")).strip()
+        correcao = str(item.get("correcao", "")).strip()
+        categoria = str(item.get("categoria", "")).strip()
+        criticidade = str(item.get("criticidade", "")).strip()
+
+        if not all([titulo, sistema, erro, causa, correcao, categoria, criticidade]):
+            continue
+
+        db.execute(
+            """
+            INSERT INTO correcoes_n2 (
+                titulo, sistema, erro, causa, correcao,
+                categoria, criticidade, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                titulo, sistema, erro, causa, correcao,
+                categoria, criticidade, timestamp, timestamp
+            )
+        )
+
+        total += 1
+
+    db.commit()
+
+    flash(f"{total} correção(ões) importada(s) com sucesso.", "success")
+    return redirect(url_for("main.correcoes_index"))
 
 
 @bp.route("/anexos/<int:anexo_id>/excluir", methods=["POST"])
