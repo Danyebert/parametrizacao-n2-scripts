@@ -80,27 +80,6 @@
               </button>
             </div>
 
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Tabela Origem</label>
-                  <input
-                    name="consulta_tabela[]"
-                    class="form-control"
-                    value="{{ consulta.nome_tabela or '' }}"
-                    placeholder="Ex: Cadastro de Clientes">
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Título da Consulta</label>
-                  <input
-                    name="consulta_titulo[]"
-                    class="form-control"
-                    value="{{ consulta.titulo }}"
-                    required
-                    placeholder="Ex: 01_Import_Clientes">
-                </div>
-
                 <div class="col-12">
                   <label class="form-label">SQL</label>
                   <textarea
@@ -212,24 +191,6 @@
         </button>
       </div>
 
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Tabela Origem</label>
-            <input
-              name="consulta_tabela[]"
-              class="form-control"
-              placeholder="Ex: Cadastro de Produtos">
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Título da Consulta</label>
-            <input
-              name="consulta_titulo[]"
-              class="form-control"
-              required
-              placeholder="Ex: 02_Import_Produtos">
-          </div>
 
           <div class="col-12">
             <label class="form-label">SQL</label>
