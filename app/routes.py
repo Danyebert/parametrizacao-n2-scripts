@@ -128,14 +128,13 @@ def scripts_index():
                       AND c2.deleted_at IS NULL
                       AND (
                           c2.titulo LIKE ?
-                          OR c2.nome_tabela LIKE ?
-                          OR c2.sql LIKE ?
+                          OR c2.codigo_sql LIKE ?
                       )
                 )
             )
             """
         )
-        params.extend([like, like, like, like, like, like, like])
+        params.extend([like, like, like, like, like, like])
 
     if tipo_banco:
         where.append("s.tipo_banco = ?")
@@ -297,21 +296,16 @@ def save_script(script_id=None):
     descricao = request.form.get("descricao", "").strip()
     observacoes = request.form.get("observacoes", "").strip()
 
-    tabelas = request.form.getlist("consulta_tabela[]")
-    titulos = request.form.getlist("consulta_titulo[]")
     sqls = request.form.getlist("consulta_sql[]")
 
     consultas_validas = []
 
-    for index, titulo_consulta in enumerate(titulos):
-        titulo_consulta = titulo_consulta.strip()
-        sql = sqls[index].strip() if index < len(sqls) else ""
-        nome_tabela = tabelas[index].strip() if index < len(tabelas) else ""
+    for index, sql in enumerate(sqls):
+        sql = sql.strip()
 
-        if titulo_consulta and sql:
+        if sql:
             consultas_validas.append({
-                "nome_tabela": nome_tabela,
-                "titulo": titulo_consulta,
+                "titulo": f"Consulta {index + 1}",
                 "sql": sql,
                 "ordem": index + 1
             })
@@ -327,7 +321,6 @@ def save_script(script_id=None):
     save_tipo_banco_if_new(tipo_banco)
 
     timestamp = now()
-
     codigo_sql_principal = consultas_validas[0]["sql"]
 
     if script_id:
@@ -400,18 +393,16 @@ def save_script(script_id=None):
             """
             INSERT INTO scripts_sql_consultas (
                 script_id,
-                nome_tabela,
                 titulo,
-                sql,
+                codigo_sql,
                 ordem,
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 target_id,
-                consulta["nome_tabela"],
                 consulta["titulo"],
                 consulta["sql"],
                 consulta["ordem"],
@@ -1083,20 +1074,18 @@ def salvar_banco_mapeado(banco_id=None):
     for consulta in consultas_validas:
         db.execute(
             """
-            INSERT INTO consulta_sql (
-                banco_id,
-                nome_tabela,
+            INSERT INTO scripts_sql_consultas (
+                script_id,
                 titulo,
-                sql,
+                codigo_sql,
                 ordem,
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 target_id,
-                consulta["nome_tabela"],
                 consulta["titulo"],
                 consulta["sql"],
                 consulta["ordem"],

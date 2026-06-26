@@ -79,15 +79,13 @@
                 <i class="bi bi-trash"></i> Remover
               </button>
             </div>
-
                 <div class="col-12">
                   <label class="form-label">SQL</label>
                   <textarea
                     name="consulta_sql[]"
                     class="form-control sql-editor"
                     rows="8"
-                    placeholder="SELECT * FROM tabela;">{{ consulta.sql }}</textarea>
-                </div>
+                    placeholder="SELECT * FROM tabela;"></textarea>
               </div>
             </div>
           </div>
@@ -101,26 +99,6 @@
               <i class="bi bi-trash"></i> Remover
             </button>
           </div>
-
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Tabela Origem</label>
-                <input
-                  name="consulta_tabela[]"
-                  class="form-control"
-                  placeholder="Ex: Cadastro de Clientes">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Título da Consulta</label>
-                <input
-                  name="consulta_titulo[]"
-                  class="form-control"
-                  required
-                  placeholder="Ex: 01_Import_Clientes">
-              </div>
-
               <div class="col-12">
                 <label class="form-label">SQL</label>
                 <textarea
