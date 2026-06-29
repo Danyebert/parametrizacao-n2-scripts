@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS scripts_sql_consultas (
     script_id INTEGER NOT NULL,
     nome_tabela TEXT,
     titulo TEXT NOT NULL,
+    codigo_slq TEXT NOT NULL,
     sql TEXT NOT NULL,
     ordem INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
