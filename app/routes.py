@@ -393,24 +393,27 @@ def save_script(script_id=None):
             """
             INSERT INTO scripts_sql_consultas (
                 script_id,
+                nome_tabela,
                 titulo,
+                sql,
                 codigo_sql,
                 ordem,
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 target_id,
+                "",
                 consulta["titulo"],
+                consulta["sql"],
                 consulta["sql"],
                 consulta["ordem"],
                 timestamp,
                 timestamp
             )
         )
-
     db.commit()
 
     return redirect(url_for("main.scripts_detail", script_id=target_id))
