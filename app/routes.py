@@ -128,7 +128,7 @@ def scripts_index():
                       AND c2.deleted_at IS NULL
                       AND (
                           c2.titulo LIKE ?
-                          OR c2.codigo_sql LIKE ?
+                          OR c2.sql LIKE ?
                       )
                 )
             )
