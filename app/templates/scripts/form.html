@@ -81,11 +81,12 @@
             </div>
                 <div class="col-12">
                   <label class="form-label">SQL</label>
-                  <textarea
-                    name="consulta_sql[]"
-                    class="form-control sql-editor"
-                    rows="8"
-                    placeholder="SELECT * FROM tabela;"></textarea>
+                    <textarea
+                      name="consulta_sql[]"
+                      class="form-control sql-editor"
+                      rows="8"
+                      placeholder="SELECT * FROM tabela;">{{ consulta.sql }}
+                    </textarea>
               </div>
             </div>
           </div>
