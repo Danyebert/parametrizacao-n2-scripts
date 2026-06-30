@@ -617,28 +617,42 @@ def correcoes_importar_json():
     total = 0
 
     for item in dados:
-        titulo = str(item.get("titulo", "")).strip()
-        sistema = str(item.get("sistema", "")).strip()
-        erro = str(item.get("erro", "")).strip()
-        causa = str(item.get("causa", "")).strip()
-        correcao = str(item.get("correcao", "")).strip()
-        categoria = str(item.get("categoria", "")).strip()
-        criticidade = str(item.get("criticidade", "")).strip()
+        titulo = str(item.get("titulo") or item.get("rotinaNome") or "").strip()
+        sistema = str(item.get("sistema") or item.get("versao") or "Não informado").strip()
+        erro = str(item.get("erro") or item.get("comentario") or "").strip()
+        causa = str(item.get("causa") or "Não informado").strip()
+        correcao = str(item.get("correcao") or item.get("solucao") or "").strip()
+        categoria = str(item.get("categoria") or "Rotina").strip()
+        criticidade = str(item.get("criticidade") or "Baixa").strip()
 
-        if not all([titulo, sistema, erro, causa, correcao, categoria, criticidade]):
+        if not titulo or not erro or not correcao:
             continue
 
         db.execute(
             """
             INSERT INTO correcoes_n2 (
-                titulo, sistema, erro, causa, correcao,
-                categoria, criticidade, created_at, updated_at
+                titulo,
+                sistema,
+                erro,
+                causa,
+                correcao,
+                categoria,
+                criticidade,
+                created_at,
+                updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                titulo, sistema, erro, causa, correcao,
-                categoria, criticidade, timestamp, timestamp
+                titulo,
+                sistema,
+                erro,
+                causa,
+                correcao,
+                categoria,
+                criticidade,
+                timestamp,
+                timestamp
             )
         )
 
